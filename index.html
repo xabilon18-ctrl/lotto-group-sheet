@@ -184,6 +184,8 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
 #predall td:first-child{font-family:Barlow,sans-serif;font-weight:600}
 #predall tr.cur{background:var(--warn-soft)}
 @media (max-width:520px){.pred{grid-template-columns:auto 1fr}.pred .score{grid-column:1/3;text-align:left}.pred .why{grid-column:1/3}.meter{margin-left:0}}
+.tldr{background:var(--yellow);color:var(--yellow-ink);border-radius:6px;padding:12px 16px;font-size:15.5px;line-height:1.45}
+.tldr b{font:700 13px "Barlow Condensed",sans-serif;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
 @media (max-width:520px){h1{font-size:28px}.drawdate{min-width:0}}
 @media (prefers-reduced-motion:no-preference){.cell span,.ghead{transition:background-color .15s,color .15s}}
 </style>
@@ -193,7 +195,7 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
 <div class="wrap">
   <header class="top">
     <h1>Lotto Group Sheet</h1>
-    <p class="rule">Your paper sheet has 40 groups. Group <b>n</b> holds <b>n, n+4, n+15, n+23, n+36</b>, so G1 is 1 · 5 · 16 · 24 · 37 and G40 is 40 · 44 · 55 · 63 · 76. Numbers overlap: 24 sits in G1, G9, G20 and G24.</p>
+    <p class="rule">Your sheet splits the numbers into <b>40 groups of 5</b>. Every group follows one rule: <b>n, n+4, n+15, n+23, n+36</b>. So group 1 is 1, 5, 16, 24, 37. Pick a game below, then choose a tab.</p>
     <div class="chips" id="games" role="group" aria-label="Game"></div>
   </header>
   <nav class="tabbar" role="tablist" aria-label="Sections">
@@ -209,21 +211,22 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-pred" aria-labelledby="tab-pred">
   <section aria-labelledby="h-pred">
     <h2 id="h-pred">Top 5 predictions</h2>
+    <p class="tldr"><b>In short</b>These are the app's 5 best guesses for the next draw. They use the numbers that come up most, numbers that often come up together, and what a normal draw looks like. Our tests show these guesses don't reliably beat random picks, so treat them as an experiment.</p>
     <p class="muted" id="predintro"></p>
     <ol class="predlist" id="predlist"></ol>
     <div class="panel">
-      <h3>How the ranking works</h3>
+      <h3>How the score works</h3>
       <ul style="margin-top:8px">
-        <li><b>Number strength (50%):</b> how often each number has been drawn compared with the average.</li>
-        <li><b>Pair strength (30%):</b> how often the numbers in the set have come out together before.</li>
-        <li><b>Shape (20%):</b> how common the set's shape is (its sum, odd/even and low/high split) among real draws.</li>
-        <li>Every set fits the typical draw, has never been drawn before, and shares at most 2 numbers with the other four.</li>
+        <li><b>Popular numbers (50%):</b> numbers that have come up more often than average score higher.</li>
+        <li><b>Pairs (30%):</b> numbers that have come out together before score higher.</li>
+        <li><b>Normal shape (20%):</b> sets that look like a typical draw (total, odd/even and low/high mix) score higher.</li>
+        <li>No set has ever been drawn before, and no two sets share more than 2 numbers.</li>
       </ul>
       <p class="muted" id="predtrack" style="margin-top:8px"></p>
     </div>
   </section>
   <section aria-labelledby="h-predall">
-    <h2 id="h-predall">All games</h2>
+    <h2 id="h-predall">Top 5 for every game</h2>
     <div class="panel tbl-scroll"><table id="predall" style="min-width:640px"><thead><tr><th>Game</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th></tr></thead><tbody></tbody></table></div>
   </section>
   </div>
@@ -231,6 +234,7 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-sheet" aria-labelledby="tab-sheet">
   <section aria-labelledby="h-draw">
     <h2 id="h-draw">The draw on your sheet</h2>
+    <p class="tldr"><b>In short</b>Each draw is shown on your paper sheet. Blue circles are the numbers that came out, and a blue group heading means that group caught 2 or more. Use the arrows to move between draws.</p>
     <div class="drawbar">
       <div class="nav">
         <button id="prev" aria-label="Earlier draw">‹</button>
@@ -250,8 +254,8 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   </section>
 
   <section aria-labelledby="h-hist">
-    <h2 id="h-hist">How each draw landed on the sheet</h2>
-    <p class="muted">One column per draw, oldest on the left. The darker the square, the more of that group's numbers came out. Click a column to open that draw above.</p>
+    <h2 id="h-hist">Every draw this year</h2>
+    <p class="muted">Each column is one draw (oldest on the left) and each row is one group. Darker squares mean more numbers from that group. Click any column to see that draw.</p>
     <div class="heat-wrap" id="heatwrap"><div class="heat-grid"><div class="heat-labels" id="heatlabels"></div><canvas id="heat"></canvas></div></div>
     <div class="legend"><span><i style="background:var(--heat0);border-radius:2px"></i>0</span><span><i style="background:var(--heat1);border-radius:2px"></i>1</span><span><i style="background:var(--heat2);border-radius:2px"></i>2</span><span><i style="background:var(--heat3);border-radius:2px"></i>3+ numbers from the group</span><span class="heat-info" id="heatinfo"></span></div>
   </section>
@@ -260,18 +264,19 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-groups" aria-labelledby="tab-groups">
   <section aria-labelledby="h-board">
     <h2 id="h-board">Group scoreboard</h2>
-    <p class="muted">"Expected" is what pure chance gives a group of that size over these draws. "Vs chance" is the gap in standard units: anything between −2 and +2 is ordinary luck, and with 40 groups one or two will land outside it by luck alone.</p>
+    <p class="tldr"><b>In short</b>This tab checks whether some groups on your sheet come up more than others, and whether following a "hot" or "due" group helps. It doesn't. The one useful tip is to use a group whose numbers can all be drawn in that game.</p>
+    <p class="muted"><b>Drawn</b> = how many of the group's numbers came out this year. <b>Expected</b> = what an average group would get. <b>Above/below</b> shows the gap: between −2 and +2 is normal, and a group outside that is unusual. Click a heading to sort.</p>
     <div class="panel tbl-scroll"><table id="board"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section aria-labelledby="h-pick">
-    <h2 id="h-pick">Which group to play</h2>
+    <h2 id="h-pick">Which group should you use?</h2>
     <div class="verdict" id="verdict"></div>
   </section>
 
   <section aria-labelledby="h-test">
-    <h2 id="h-test">Does history predict the next draw?</h2>
-    <p class="muted">A fair replay: for every draw, each rule picks a group using only the draws before it, then we count how many of that group's numbers came out. A score above 0 means the rule beat chance. "Random pick" is the control, and its result shows how big luck alone can look.</p>
+    <h2 id="h-test">Test: does the past predict the next draw?</h2>
+    <p class="muted">We replay the year. Before each draw, each rule picks a group using only earlier draws, and we count how many of its numbers came out. <b>Above 0</b> means the rule did better than average. "Random pick" is the comparison: if a rule can't beat it, the rule doesn't work.</p>
     <div class="controls">
       <label for="win">Look back over <b id="winv"></b> draws</label>
       <input type="range" id="win" min="5" max="60" step="1" value="30">
@@ -284,25 +289,26 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-patterns" aria-labelledby="tab-patterns">
   <section aria-labelledby="h-rep">
     <h2 id="h-rep">What the numbers show</h2>
+    <p class="tldr"><b>In short</b>This tab lists what this year's draws show: the most and least drawn numbers, common pairs, and what a normal draw looks like. The shape of a draw stays the same over time, but the "most drawn" numbers keep changing.</p>
     <p class="muted" id="repintro"></p>
     <div class="rep-grid" id="repgrid"></div>
     <div class="panel">
-      <h3>The typical draw</h3>
-      <p class="muted" style="margin-top:4px">The shape most draws have. A pick built to this shape looks like the draws that actually happen.</p>
+      <h3>What a normal draw looks like</h3>
+      <p class="muted" style="margin-top:4px">Most draws fit this pattern. Blue bars show the most common results.</p>
       <div class="profile" id="profile"></div>
     </div>
     <div class="lab-grid">
       <div class="panel lab-out">
-        <h3>Pick built from the patterns</h3>
+        <h3>A pick made from these patterns</h3>
         <div class="balls big" id="repballs"></div>
         <p class="muted" id="repwhy"></p>
         <div class="btns"><button class="btn primary" id="repgen">Build another</button></div>
-        <h3 style="margin-top:12px">Top 5 full tickets</h3>
-        <p class="muted" style="font-size:13px">Five sets that fit the typical shape, lean on the most-drawn numbers and pairs, share at most 2 numbers with each other, and have never been drawn together.</p>
+        <h3 style="margin-top:12px">5 full tickets</h3>
+        <p class="muted" style="font-size:13px">Built from popular numbers and pairs, shaped like a normal draw, and never drawn before.</p>
         <div id="top5" class="top5"></div>
       </div>
       <div class="panel">
-        <h3>Check: learn on the first ⅔, test on the last ⅓</h3>
+        <h3>Test: do the patterns last?</h3>
         <div id="holdout" style="margin-top:6px"></div>
       </div>
     </div>
@@ -312,7 +318,8 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-sky" aria-labelledby="tab-sky">
   <section aria-labelledby="h-cmp">
     <h2 id="h-cmp">Moon, stars or calendar?</h2>
-    <p class="muted">Split the draws into groups and see whether the groups really differ. The fair test is the shuffle: the same draws get random group labels 1,000 times. If the real grouping differs more than almost all the shuffles, it's a real difference. Then compare with groupings that can't matter, like calendar months or made-up labels.</p>
+    <p class="tldr"><b>In short</b>We test whether the moon or star signs change the numbers drawn. Made-up groupings "pass" the test just as often as the moon and stars do, so there's no real link.</p>
+    <p class="muted">How the test works: we sort the draws into groups (for example by moon phase) and compare them. Then we shuffle the labels randomly 1,000 times. If the real groups differ more than almost all the shuffles, the difference is real.</p>
     <div class="controls">
       <label for="cmpgroup">Group draws by <select id="cmpgroup">
         <option value="phase">Moon phase</option><option value="sun">Star sign (sun sign)</option><option value="moonsign">Moon sign</option>
@@ -326,13 +333,13 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
       <div class="panel lab-out"><h3>Result</h3><div id="cmpres"></div></div>
     </div>
     <div class="panel">
-      <h3>All groupings side by side</h3>
-      <p class="muted" style="margin-top:4px">Same game, same measure. "Beaten by" is how many of 1,000 shuffles differed at least as much as the real grouping. Under 50 (5%) counts as a notable difference.</p>
+      <h3>All groupings compared</h3>
+      <p class="muted" style="margin-top:4px"><b>Beaten by</b> = how many of 1,000 random shuffles did at least as well. Under 50 counts as a notable difference. The decoys can't mean anything, so watch how often they come out notable too.</p>
       <div class="tbl-scroll" style="margin-top:8px"><table id="cmptable" style="min-width:520px"><thead><tr><th>Grouping</th><th>Groups</th><th>Beaten by</th><th>Verdict</th></tr></thead><tbody></tbody></table></div>
       <p class="muted" id="cmpoverlap" style="margin-top:8px"></p>
     </div>
     <div class="panel">
-      <div class="btns" style="justify-content:space-between;align-items:center"><h3>Decoy test: how often does nonsense look real?</h3><button class="btn primary" id="decoy">Run 100 made-up groupings</button></div>
+      <div class="btns" style="justify-content:space-between;align-items:center"><h3>Decoy test: can nonsense pass?</h3><button class="btn primary" id="decoy">Run 100 made-up groupings</button></div>
       <div id="decoyout" class="muted" style="margin-top:8px">Press the button. It gives the draws 100 different sets of random 12-group labels and counts how many look "notable". Compare that count with what the moon and stars get.</div>
     </div>
   </section>
@@ -341,16 +348,17 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   <div class="tabpanel" role="tabpanel" id="panel-lab" aria-labelledby="tab-lab">
   <section aria-labelledby="h-lab">
     <h2 id="h-lab">Formula lab</h2>
-    <p class="muted">A prediction formula you can tune. It gives every number a score from the past results, turns the scores into chances, draws a set, and throws away any set that has already come up. Then it replays the whole year to see whether the formula would have beaten chance.</p>
+    <p class="tldr"><b>In short</b>Build your own prediction formula with the sliders, then press "Run the replay" to see if it would have worked on this year's draws.</p>
+    <p class="muted">The formula gives every number a score, turns scores into chances, picks a set, and never repeats a past result. The steps below show the maths, with a plain-words version of each.</p>
     <div class="panel formula">
-      <h3>The formula</h3>
+      <h3>The formula, step by step</h3>
       <ol class="steps">
-        <li><b>Frequency, with Bayesian shrinkage.</b> <span class="eq">f<sub>i</sub> = (c<sub>i</sub> + a) / (N + a·M)</span>, where c<sub>i</sub> is how often number i was drawn, N is all numbers drawn, M is the highest number and a is the prior. A large a pulls every number back towards fair when there's little data.</li>
-        <li><b>Recency.</b> <span class="eq">r<sub>i</sub> = e<sup>−g<sub>i</sub>/τ</sup></span>, where g<sub>i</sub> is the number of draws since i last appeared. A positive weight favours numbers seen recently, and a negative weight favours overdue ones.</li>
-        <li><b>Sheet group heat.</b> <span class="eq">h<sub>i</sub></span> is the average recent hits of the groups on your sheet that contain i.</li>
-        <li><b>Score.</b> <span class="eq">S<sub>i</sub> = w<sub>f</sub>·z(f<sub>i</sub>) + w<sub>r</sub>·z(r<sub>i</sub>) + w<sub>h</sub>·z(h<sub>i</sub>)</span>, where z(·) rescales each part to mean 0 and standard deviation 1 so the weights compare fairly.</li>
-        <li><b>Chance of picking i.</b> <span class="eq">P<sub>i</sub> = e<sup>S<sub>i</sub>/T</sup> / Σ<sub>j</sub> e<sup>S<sub>j</sub>/T</sup></span> (a softmax). A low temperature T makes the formula stick to its top scores, and a high T makes it close to random.</li>
-        <li><b>No repeats.</b> The formula draws numbers from P<sub>i</sub> without replacement. It rejects the set if every number in it appeared together in any past draw, or if the set shares more than the allowed amount with the last draw.</li>
+        <li><b>1. How often it\'s drawn.</b> <span class="eq">f<sub>i</sub> = (c<sub>i</sub> + a) / (N + a·M)</span>, where c<sub>i</sub> is how often number i was drawn, N is all numbers drawn, M is the highest number and a is the prior. A large a pulls every number back towards fair when there's little data. <i>In plain words: numbers drawn more often score higher, but we don\'t trust small counts too much.</i></li>
+        <li><b>2. How recently it came up.</b> <span class="eq">r<sub>i</sub> = e<sup>−g<sub>i</sub>/τ</sup></span>, where g<sub>i</sub> is the number of draws since i last appeared. A positive weight favours numbers seen recently, and a negative weight favours overdue ones. <i>In plain words: numbers seen lately score higher, or lower if you prefer "overdue" numbers.</i></li>
+        <li><b>3. Your sheet.</b> <span class="eq">h<sub>i</sub></span> is the average recent hits of the groups on your sheet that contain i. <i>In plain words: numbers in groups that have done well lately score higher.</i></li>
+        <li><b>4. Total score.</b> <span class="eq">S<sub>i</sub> = w<sub>f</sub>·z(f<sub>i</sub>) + w<sub>r</sub>·z(r<sub>i</sub>) + w<sub>h</sub>·z(h<sub>i</sub>)</span>, where z(·) rescales each part to mean 0 and standard deviation 1 so the weights compare fairly. <i>In plain words: add the three parts together, using your slider weights.</i></li>
+        <li><b>5. Turn scores into chances.</b> <span class="eq">P<sub>i</sub> = e<sup>S<sub>i</sub>/T</sup> / Σ<sub>j</sub> e<sup>S<sub>j</sub>/T</sup></span> (a softmax). A low temperature T makes the formula stick to its top scores, and a high T makes it close to random. <i>In plain words: higher scores get a bigger chance of being picked.</i></li>
+        <li><b>6. No repeats.</b> The formula draws numbers from P<sub>i</sub> without replacement. It rejects the set if every number in it appeared together in any past draw, or if the set shares more than the allowed amount with the last draw. <i>In plain words: a set that has already been drawn is never used.</i></li>
       </ol>
     </div>
     <div class="lab-grid">
@@ -366,16 +374,16 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
         </div>
       </div>
       <div class="panel lab-out">
-        <h3>Next-draw pick</h3>
+        <h3>Your formula's pick</h3>
         <div class="balls big" id="labballs"></div>
         <p class="muted" id="labnote"></p>
         <div class="btns"><button class="btn primary" id="gen">Generate new pick</button><button class="btn" id="copy">Copy numbers</button></div>
-        <h3 style="margin-top:14px">Top-scored numbers now</h3>
+        <h3 style="margin-top:14px">Highest-scoring numbers</h3>
         <div class="scorebars" id="scorebars"></div>
       </div>
     </div>
     <div class="panel">
-      <div class="btns" style="justify-content:space-between;align-items:center"><h3>Would this formula have worked this year?</h3><button class="btn primary" id="bt">Run the replay</button></div>
+      <div class="btns" style="justify-content:space-between;align-items:center"><h3>Test: would your formula have worked?</h3><button class="btn primary" id="bt">Run the replay</button></div>
       <div id="btout" class="muted" style="margin-top:8px">Press "Run the replay". It picks with these exact settings before every draw since the 30th, using only earlier results, and compares the matches with random picks.</div>
     </div>
   </section>
@@ -383,7 +391,7 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
 
   <div class="foot">
     <p id="srcline"></p>
-    <p>Draws are random. No grouping or history changes the odds of the next draw. Play only with money you can afford to lose. Free support: National Responsible Gambling Programme, 0800 006 008.</p>
+    <p>A school project. Each draw is random, and no pattern changes the odds of the next one. If you play, only use money you can afford to lose. Free help: National Responsible Gambling Programme, 0800 006 008.</p>
   </div>
 </div>
 
@@ -440,7 +448,7 @@ function renderDraw(){
   const avgTwo=HITS.reduce((s,r)=>s+r.filter(n=>n>=2).length,0)/HITS.length;
   $("drawsum").innerHTML=`
     <div class="stat"><span class="v">${two.length?two.map(x=>`G${x[1]+1}`).join(", "):"None"}</span><span class="l">groups with 2+ numbers this draw${two.length?" ("+two.map(x=>x[0]).join(", ")+")":""}</span></div>
-    <div class="stat"><span class="v num">${two.length} <span class="muted" style="font-size:15px">vs ${avgTwo.toFixed(1)} usual</span></span><span class="l">groups with 2+, compared with the average draw</span></div>
+    <div class="stat"><span class="v num">${two.length} <span class="muted" style="font-size:15px">vs ${avgTwo.toFixed(1)} usual</span></span><span class="l">groups with 2+ this draw, compared with a normal draw</span></div>
     <div class="stat"><span class="v num">${covered} / 40</span><span class="l">groups that caught at least one number</span></div>`;
 }
 function renderHeat(){
@@ -472,7 +480,7 @@ function renderBoard(){
     return {g,c,obs,exp,z:c?(obs-exp)/Math.sqrt(vr):0,last:last.reduce((a,b)=>a+b,0),spark:last,p2:pAtLeast(c,2)};
   });
   const rows=[...boardRows].sort((a,b)=>sortDir*((a[sortKey]>b[sortKey])-(a[sortKey]<b[sortKey]))||a.g-b.g);
-  const cols=[["g","Group"],["nums","Numbers"],["c","In play"],["obs","Drawn"],["exp","Expected"],["z","Vs chance"],["last","Last 10 draws"],["p2","Chance of 2+"]];
+  const cols=[["g","Group"],["nums","Numbers"],["c","Can be drawn"],["obs","Drawn"],["exp","Expected"],["z","Above/below"],["last","Last 10"],["p2","Chance of 2+ per draw"]];
   $("board").querySelector("thead").innerHTML="<tr>"+cols.map(([k,l])=>`<th data-k="${k}"${k===sortKey?` aria-sort="${sortDir>0?"ascending":"descending"}"`:""}>${l}</th>`).join("")+"</tr>";
   $("board").querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(k==="nums")return;if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=k==="g"?1:-1}renderBoard()});
   const zc=z=>Math.abs(z)>=2?(z>0?"var(--good)":"var(--bonus)"):"var(--muted)";
@@ -502,16 +510,16 @@ function walkForward(rule,W,seed){
 let lastTest={};
 function renderTest(){
   W=Math.min(+$("win").value,Math.max(5,HITS.length-20));$("win").max=Math.min(60,Math.max(5,HITS.length-20));$("winv").textContent=W;
-  const rules=[["hot","Hot group","Play the group that caught the most numbers in the last "+W+" draws."],["cold","Cold group (\"due\")","Play the group that caught the fewest in the last "+W+" draws."],["repeat","Repeat last draw","Play the group that did best in the draw just before."],["random","Random pick (control)","Pick any full group at random. This is the luck baseline."]];
+  const rules=[["hot","Hot group","Use the group that caught the most numbers in the last "+W+" draws."],["cold","Cold group (\"due\")","Use the group that caught the fewest, as if it's \"due\"."],["repeat","Repeat last draw","Play the group that did best in the draw just before."],["random","Random pick (control)","Pick any full group at random. This is the luck baseline."]];
   const res=rules.map(([k,name,desc])=>({k,name,desc,...walkForward(k,W,7+W)}));
   lastTest=Object.fromEntries(res.map(r=>[r.k,r]));
   const span=Math.max(0.35,...res.map(r=>Math.abs(r.m)+2*r.se));
   const pos=v=>50+50*v/span;
-  $("results").innerHTML=res.map(r=>{const z=r.m/r.se;const pill=z>=2?'<span class="pill good">Beat chance, re-check with more draws</span>':z<=-2?'<span class="pill warn">Did worse than chance</span>':'<span class="pill">No edge, within luck</span>';
+  $("results").innerHTML=res.map(r=>{const z=r.m/r.se;const pill=z>=2?'<span class="pill good">Did better. Check again with more draws</span>':z<=-2?'<span class="pill warn">Did worse than average</span>':'<span class="pill">No better than random</span>';
     return `<div class="res"><span class="name">${r.name}</span><span class="desc">${r.desc}</span>
     <span class="v">${r.m>=0?"+":""}${r.m.toFixed(3)} <span class="muted" style="font-size:13px">± ${r.se.toFixed(3)} per draw</span></span>
     <div class="errbar" aria-hidden="true"><div class="zero"></div><div class="rng" style="left:${pos(r.m-2*r.se)}%;width:${100*2*r.se/span}%"></div><div class="pt" style="left:${pos(r.m)}%"></div></div>
-    ${pill}<span class="desc">${r.n} draws replayed. The bar is the result ±2 standard errors, and 0 is chance.</span></div>`}).join("");
+    ${pill}<span class="desc">Tested on ${r.n} draws. The dot is the result, the bar is its margin of error, and the middle line is average.</span></div>`}).join("");
   renderFair();renderVerdict();
 }
 function chi(hits){const p=game.k/game.max,n=hits.length;let c=0;for(let g=0;g<40;g++){const e=n*inRange(g).length*p;if(e>0){const o=hits.reduce((s,r)=>s+r[g],0);c+=(o-e)**2/e}}return c}
@@ -524,8 +532,8 @@ function renderFair(){
     fairCache[key]={real,p:sims.filter(s=>s>=real).length/sims.length};
   }
   const f=fairCache[key];
-  const read=f.p<0.02?`That is <b>more uneven than chance usually gives</b> (${Math.round(f.p*100)||"<1"}% of random years look this lopsided). Treat it as something to watch, not a pattern to bet on: across ${DATA.length} games, one or two will look like this by luck.`:`That is <b>ordinary for random draws</b>: ${Math.round(f.p*100)}% of simulated random years are at least this lopsided.`;
-  $("fair").innerHTML=`<h3>Are some groups coming up more than others?</h3><p style="margin-top:6px">I compared how unevenly the ${HITS.length} real draws spread across the 40 groups with 400 simulated years of random draws. ${read}</p>`;
+  const read=f.p<0.02?`That is <b>more uneven than usual</b>: only ${Math.round(f.p*100)||"under 1"}% of the random years looked this lopsided. It's worth watching, but with ${DATA.length} games, one or two will look like this by chance.`:`That is <b>normal</b>: ${Math.round(f.p*100)}% of the random years were at least this uneven.`;
+  $("fair").innerHTML=`<h3>Do some groups come up more than others?</h3><p style="margin-top:6px">We compared this year's ${HITS.length} draws with 400 made-up years of random draws. ${read}</p>`;
 }
 function renderVerdict(){
   const cov=GROUPS.map((_,g)=>inRange(g).length), mx=Math.max(...cov);
@@ -534,12 +542,12 @@ function renderVerdict(){
   const hot=[...boardRows].filter(r=>r.c===mx).sort((a,b)=>b.last-a.last||b.z-a.z)[0];
   const ht=lastTest.hot, hz=ht?ht.m/ht.se:0;
   $("verdict").innerHTML=`
-   <h3>By the maths</h3>
-   <p><b>Play a group with all ${mx} of its numbers inside ${game.name}'s 1–${game.max}.</b> Numbers above ${game.max} can never be drawn, so they're dead weight. These ${best.length} groups are tied for the best chance, with <b>${(pAtLeast(mx,2)*100).toFixed(1)}%</b> for 2+ numbers per draw and <b>${(pAtLeast(mx,3)*100).toFixed(2)}%</b> for 3+:</p>
+   <h3>Best choice</h3>
+   <p><b>Use a group whose ${mx} numbers can all be drawn in ${game.name} (1–${game.max}).</b> A number above ${game.max} can never come out, so it's wasted. These ${best.length} groups are equal best, each with a <b>${(pAtLeast(mx,2)*100).toFixed(1)}%</b> chance of getting 2 or more numbers in a draw:</p>
    <div class="pick-list">${best.map(g=>`<button class="pick" data-g="${g}">G${g+1}</button>`).join("")}</div>
-   ${worst.length?`<p class="muted">Avoid ${worst.map(g=>"G"+(g+1)).join(", ")}: at most one of their numbers is playable in this game.</p>`:""}
-   <h3 style="margin-top:6px">By the history</h3>
-   <p>The group doing best among those lately is <b>G${hot.g+1}</b> (${hot.last} numbers in the last 10 draws). In the replay above, following the hot group scored ${ht.m>=0?"+":""}${ht.m.toFixed(3)} numbers per draw versus chance, <b>${Math.abs(hz)<2?"no better than luck":hz>0?"better than chance so far, so re-check it as draws come in":"worse than chance"}</b>. Past draws don't change the odds of the next one, so no group is "due".</p>`;
+   ${worst.length?`<p class="muted">Avoid ${worst.map(g=>"G"+(g+1)).join(", ")}: they have one number or fewer that can be drawn in this game.</p>`:""}
+   <h3 style="margin-top:6px">What about the hot group?</h3>
+   <p>The best group lately is <b>G${hot.g+1}</b> (${hot.last} numbers in the last 10 draws). But in the test below, following the hot group was <b>${Math.abs(hz)<2?"no better than a random group":hz>0?"better so far, so check it again as new draws come in":"worse than a random group"}</b>. No group is ever \"due\": each draw starts fresh.</p>`;
   $("verdict").querySelectorAll(".pick").forEach(b=>b.onclick=()=>{selGroup=+b.dataset.g;renderDraw();renderBoard();renderHeat();showTab("sheet");document.getElementById("h-draw").scrollIntoView({behavior:"smooth"})});
 }
 // ---------- Formula lab ----------
@@ -591,13 +599,13 @@ function labBacktest(){
   }
   const ms=a=>{const m=a.reduce((s,x)=>s+x,0)/a.length;return[m,Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))/Math.sqrt(a.length)]};
   const [m,se]=ms(ex),[mr,ser]=ms(exR), z=m/se;
-  const verdict=Math.abs(z)<2?'<span class="pill">No edge: within luck</span>':z>0?'<span class="pill good">Beat chance this year. Re-test on new draws before believing it</span>':'<span class="pill warn">Worse than chance</span>';
+  const verdict=Math.abs(z)<2?'<span class="pill">No better than random</span>':z>0?'<span class="pill good">Did better this year. Test it again on new draws</span>':'<span class="pill warn">Did worse than average</span>';
   $("btout").innerHTML=`<div class="bt-row">
     <div class="stat"><span class="v num">${(exp+m).toFixed(3)}</span><span class="l">your formula: numbers matched per draw</span></div>
-    <div class="stat"><span class="v num">${(exp+mr).toFixed(3)}</span><span class="l">random picks, same rules</span></div>
-    <div class="stat"><span class="v num">${exp.toFixed(3)}</span><span class="l">what chance predicts</span></div>
-    <div class="stat"><span class="v num">${m>=0?"+":""}${m.toFixed(3)} ± ${se.toFixed(3)}</span><span class="l">formula vs chance (±1 standard error), ${ex.length} draws</span></div></div>
-    <p style="margin-top:10px">${verdict} ${full} of ${ex.length} picks matched ${Math.min(3,P.n)} or more numbers. If you try many settings, one will look good by luck, so check a setting you like on the next month of draws before trusting it.</p>`;
+    <div class="stat"><span class="v num">${(exp+mr).toFixed(3)}</span><span class="l">random picks</span></div>
+    <div class="stat"><span class="v num">${exp.toFixed(3)}</span><span class="l">average you'd expect</span></div>
+    <div class="stat"><span class="v num">${m>=0?"+":""}${m.toFixed(3)} ± ${se.toFixed(3)}</span><span class="l">difference from average (± margin of error), over ${ex.length} draws</span></div></div>
+    <p style="margin-top:10px">${verdict} ${full} of ${ex.length} picks matched ${Math.min(3,P.n)} or more numbers. Careful: if you try lots of settings, one will look good just by luck. Test your favourite again next month.</p>`;
 }
 function labInit(){
   const opts=[3,4,5,6].filter(n=>n<=game.k);
@@ -647,7 +655,7 @@ function renderReport(){
   const pairs=[...Lr.pair.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
   const recent=D.slice(-20),rf=new Array(M+1).fill(0);recent.forEach(d=>d[1].forEach(x=>rf[x]++));
   const rising=[...nums].sort((a,b)=>(rf[b]/20-Lr.f[b]/n)-(rf[a]/20-Lr.f[a]/n)).slice(0,6);
-  $("repintro").textContent=`${n} ${game.name} draws, ${k} numbers each from 1–${M}. Everything below is counted straight from these draws.`;
+  $("repintro").textContent=`${n} ${game.name} draws, ${k} numbers each from 1–${M}. All counted straight from these draws.`;
   const tag=(x,s,c="")=>`<span class="tag ${c}">${x}<small>${s}</small></span>`;
   $("repgrid").innerHTML=`
    <div class="panel rep-card"><h3>Drawn most</h3><div class="list">${hot.map(x=>tag(x,"×"+Lr.f[x])).join("")}</div></div>
@@ -681,10 +689,10 @@ function renderReport(){
   const tf=new Array(M+1).fill(0);test.forEach(d=>d[1].forEach(x=>tf[x]++));
   const testTop=nums.slice().sort((a,b)=>tf[b]-tf[a]).slice(0,10);
   const kept=trainTop.filter(x=>testTop.includes(x));
-  $("holdout").innerHTML=`<p>Patterns learned from draws 1–${cut} (to ${fmtDate(D[cut-1][0])}), then checked on the ${test.length} draws after.</p>
+  $("holdout").innerHTML=`<p>We found the patterns using the first ${cut} draws (up to ${fmtDate(D[cut-1][0])}), then checked them on the ${test.length} draws after that.</p>
    <ul style="margin-top:8px">
-    <li>The typical-draw shape (all five rules together) covered <b>${Math.round(trainFit*100)}%</b> of the draws it was learned from and <b>${Math.round(fitRate*100)}%</b> of the later draws.</li>
-    <li>Of the 10 most-drawn numbers in the first part, <b>${kept.length}</b> were still in the top 10 afterwards${kept.length?` (${kept.join(", ")})`:""}.</li>
+    <li><b>Normal draw shape:</b> fitted <b>${Math.round(trainFit*100)}%</b> of the early draws and <b>${Math.round(fitRate*100)}%</b> of the later ones, so it mostly holds.</li>
+    <li><b>Most-drawn numbers:</b> only <b>${kept.length}</b> of the early top 10 were still in the top 10 later${kept.length?` (${kept.join(", ")})`:""}, so they change.</li>
    </ul>
    <div class="tbl-scroll" style="margin-top:8px"><table style="min-width:0"><thead><tr><th>${pk} numbers chosen by</th><th>Matched per later draw</th><th></th></tr></thead><tbody>
     ${line("Pattern pick: "+pick.join(", "),avgHit(pick),pos(avgHit(pick)))}
@@ -756,11 +764,11 @@ function renderCmp(){
      <line class="err" x1="${cx}" x2="${cx}" y1="${y(g.m+g.se)}" y2="${y(Math.max(lo,g.m-g.se))}"/>
      <text x="${cx}" y="${H-pb+14}" text-anchor="middle">${g.nm}</text><text x="${cx}" y="${H-pb+27}" text-anchor="middle">n=${g.n}</text>`}).join("")}
    <line class="mean" x1="${pl}" x2="${W-10}" y1="${y(all)}" y2="${y(all)}"/>
-  </svg><p class="muted" style="font-size:12px;margin-top:4px">Bars: average per group, with ±1 standard error. Dashed line: average of all ${v.length} draws.</p>`;
+  </svg><p class="muted" style="font-size:12px;margin-top:4px">Each bar is the average for that group, and the thin line shows its margin of error. The dashed line is the average of all ${v.length} draws.</p>`;
   const beat=shuffleTest(v,labs,1000,17);
   const note=beat<10?'<span class="pill good">Strong difference</span>':beat<50?'<span class="pill warn">Notable difference</span>':'<span class="pill">No real difference</span>';
-  $("cmpres").innerHTML=`<span class="bigp num">${beat} / 1000</span><span class="muted">shuffles differed as much as the real ${$("cmpgroup").selectedOptions[0].text.toLowerCase()} grouping</span>${note}
-    <p style="font-size:14px">${beat<50?"The groups differ more than random labels usually do. Now check the same measure with calendar months and the decoys in the table below. If they also come out notable, this grouping isn't special.":"Random labels split these draws just as unevenly, so this grouping tells you nothing about "+$("cmpfeat").selectedOptions[0].text.toLowerCase()+"."}</p>`;
+  $("cmpres").innerHTML=`<span class="bigp num">${beat} / 1000</span><span class="muted">random shuffles did as well as the real grouping (under 50 is notable)</span>${note}
+    <p style="font-size:14px">${beat<50?"The groups look different. Before believing it, check the table below: if calendar months or the decoys also come out notable, this result is probably just chance.":"No real difference: random shuffles did just as well, so this grouping doesn't affect the numbers."}</p>`;
   renderCmpTable(fk,v);
 }
 function renderCmpTable(fk,v){
@@ -771,7 +779,7 @@ function renderCmpTable(fk,v){
   const pairs={};sun.forEach((s,i)=>{const k=s+"|"+mon[i];pairs[k]=(pairs[k]||0)+1});
   const bySign={};Object.entries(pairs).forEach(([k,c])=>{const s=k.split("|")[0];bySign[s]=Math.max(bySign[s]||0,c)});
   const same=Object.values(bySign).reduce((a,b)=>a+b,0);
-  $("cmpoverlap").textContent=`Star signs and months overlap: ${Math.round(100*same/sun.length)}% of these draws share their star sign with the calendar month most draws of that sign fall in. So a pattern in star signs will usually show up in months too, and months have nothing to do with the stars.`;
+  $("cmpoverlap").textContent=`Why star signs and months look alike: ${Math.round(100*same/sun.length)}% of these draws fall in the same month as the rest of their star sign. So a pattern in star signs usually shows up in months too, and months have nothing to do with the stars.`;
 }
 $("cmpgroup").onchange=renderCmp;$("cmpfeat").onchange=renderCmp;
 $("cmpreroll").onclick=()=>{FAKE_SEED++;renderCmp()};
@@ -779,7 +787,7 @@ $("decoy").onclick=()=>{
   $("decoyout").textContent="Running…";
   setTimeout(()=>{const fk=$("cmpfeat").value,v=featVals(fk);let notable=0,strong=0;
     for(let s=0;s<100;s++){const R=rng(1000+s),labs=v.map(()=>Math.floor(R()*12));const b=shuffleTest(v,labs,300,s+5)/300*1000;if(b<50)notable++;if(b<10)strong++}
-    $("decoyout").innerHTML=`<p style="color:var(--ink)"><b>${notable}</b> of 100 made-up groupings came out <b>notable</b>, and <b>${strong}</b> came out <b>strong</b>, for ${$("cmpfeat").selectedOptions[0].text.toLowerCase()} in ${game.name}.</p><p style="margin-top:6px">That's how often pure nonsense passes the test. The table above tried 7 groupings and 6 measures are on offer, so expect a few "notable" results from nowhere. A grouping only means something if it beats this rate again and again, on new draws and in other games.</p>`},20)};
+    $("decoyout").innerHTML=`<p style="color:var(--ink)"><b>${notable}</b> of 100 made-up groupings came out <b>notable</b>, and <b>${strong}</b> came out <b>strong</b>, for ${$("cmpfeat").selectedOptions[0].text.toLowerCase()} in ${game.name}.</p><p style="margin-top:6px">These groupings are pure nonsense, yet some still \"pass\". So a single notable result proves nothing. A real effect would have to pass again and again, on new draws and in other games.</p>`},20)};
 // ---------- Predictions ----------
 function rankedFive(g){
   const keep=game; game=g;
@@ -817,7 +825,7 @@ function renderPred(){
       <div class="score"><b class="num">${Math.round(100*x.score/top)}</b><span>score</span>
         <div class="meter" title="numbers ${Math.round(x.pn*50)} · pairs ${Math.round(x.pp*30)} · shape ${Math.round(x.ps*20)}"><i style="width:${x.pn*50}%"></i><i style="width:${x.pp*30}%"></i><i style="width:${x.ps*20}%"></i></div></div>
       <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.</span></li>`}).join("");
-  $("predtrack").textContent="Track record from the Patterns tab: sets ranked this way on earlier draws beat, on average, 12% (Lotto) to 78% (Daily Lotto Plus) of random sets on the draws that followed, and the result swung widely depending on the cut-off date.";
+  $("predtrack").textContent="How well has this worked? When we built sets this way from earlier draws and tested them on later ones, they did better than random picks in some tests and worse in others (from 12% of random sets beaten in Lotto to 78% in Daily Lotto Plus). So there's no reliable edge.";
   $("predall").querySelector("tbody").innerHTML=DATA.map(g=>`<tr class="${g===game?"cur":""}"><td>${g.name}</td>${predsFor(g).sets.map(x=>`<td>${x.s.join(" ")}</td>`).join("")}</tr>`).join("");
 }
 // ---------- tabs ----------
