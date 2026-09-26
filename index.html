@@ -180,9 +180,18 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
 .pred .why{grid-column:2/4;font-size:13px;color:var(--muted)}
 .meter{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--heat0);width:120px;margin-left:auto;margin-top:4px}
 .meter i:nth-child(1){background:var(--hit)}.meter i:nth-child(2){background:var(--heat2)}.meter i:nth-child(3){background:var(--bonus)}
-#predall td{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:13px}
-#predall td:first-child{font-family:Barlow,sans-serif;font-weight:600}
-#predall tr.cur{background:var(--warn-soft)}
+.gamecards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.gcard:hover{border-color:var(--line-strong)}
+.gcard.cur{border:2px solid var(--yellow)}
+.gcard h3{color:var(--ink);font-size:18px;text-transform:none;letter-spacing:.01em}
+.gcard .when{font-size:12px;color:var(--muted);margin-top:-4px}
+.gcard ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.gcard li{display:flex;align-items:center;gap:8px}
+.gcard .rk{font:600 14px "Barlow Condensed",sans-serif;color:var(--muted);width:22px;flex:none}
+.gcard .nums{display:flex;flex-wrap:wrap;gap:4px}
+.gcard .nums span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:500 12px "IBM Plex Mono",monospace;background:var(--hit-soft);color:var(--ink)}
+.gcard li:first-child .nums span{background:var(--hit);color:var(--hit-ink)}
 @media (max-width:520px){.pred{grid-template-columns:auto 1fr}.pred .score{grid-column:1/3;text-align:left}.pred .why{grid-column:1/3}.meter{margin-left:0}}
 .tldr{background:var(--yellow);color:var(--yellow-ink);border-radius:6px;padding:12px 16px;font-size:15.5px;line-height:1.45}
 .tldr b{font:700 13px "Barlow Condensed",sans-serif;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
@@ -227,7 +236,8 @@ button.link{background:none;border:0;color:var(--hit);font:inherit;cursor:pointe
   </section>
   <section aria-labelledby="h-predall">
     <h2 id="h-predall">Top 5 for every game</h2>
-    <div class="panel tbl-scroll"><table id="predall" style="min-width:640px"><thead><tr><th>Game</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th></tr></thead><tbody></tbody></table></div>
+    <p class="muted">Tap a card to open that game.</p>
+    <div class="gamecards" id="predall"></div>
   </section>
   </div>
 
@@ -826,7 +836,9 @@ function renderPred(){
         <div class="meter" title="numbers ${Math.round(x.pn*50)} · pairs ${Math.round(x.pp*30)} · shape ${Math.round(x.ps*20)}"><i style="width:${x.pn*50}%"></i><i style="width:${x.pp*30}%"></i><i style="width:${x.ps*20}%"></i></div></div>
       <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.</span></li>`}).join("");
   $("predtrack").textContent="How well has this worked? When we built sets this way from earlier draws and tested them on later ones, they did better than random picks in some tests and worse in others (from 12% of random sets beaten in Lotto to 78% in Daily Lotto Plus). So there's no reliable edge.";
-  $("predall").querySelector("tbody").innerHTML=DATA.map(g=>`<tr class="${g===game?"cur":""}"><td>${g.name}</td>${predsFor(g).sets.map(x=>`<td>${x.s.join(" ")}</td>`).join("")}</tr>`).join("");
+  $("predall").innerHTML=DATA.map(g=>`<button class="gcard${g===game?" cur":""}" data-k="${g.key}" aria-label="Open ${g.name}"><h3>${g.name}</h3><span class="when">Next draw: ${g.when}</span>
+    <ol>${predsFor(g).sets.map((x,i)=>`<li><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}</span></li>`).join("")}</ol></button>`).join("");
+  $("predall").querySelectorAll(".gcard").forEach(b=>b.onclick=()=>{game=DATA.find(g=>g.key===b.dataset.k);store.set("game",game.key);idx=game.draws.length-1;selGroup=null;all();$("h-pred").scrollIntoView({behavior:"smooth"})});
 }
 // ---------- tabs ----------
 const TABS=["pred","sheet","groups","patterns","sky","lab"];
