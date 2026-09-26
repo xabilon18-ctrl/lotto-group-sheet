@@ -172,14 +172,18 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 @media (max-width:480px){.tabbar button{font-size:12.5px;padding:8px 2px}}
 .tabpanel{display:flex;flex-direction:column;gap:28px}
 .predlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.pred{display:grid;grid-template-columns:auto 1fr auto;gap:6px 16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 16px}
+.pred{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"rank score" "balls balls" "why why";gap:8px 16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 16px}
 .pred.first{border:2px solid var(--yellow)}
-.pred .rank{font:700 30px "Barlow Condensed",sans-serif;color:var(--muted);min-width:34px}
+.pred .rank{grid-area:rank;font:700 30px "Barlow Condensed",sans-serif;color:var(--muted);min-width:34px}
 .pred.first .rank{color:var(--ink)}
-.pred .score{text-align:right}
+.pred .score{grid-area:score;text-align:right}
+.pred .balls{grid-area:balls;flex-wrap:nowrap;gap:5px}
+.pred .balls .ball{flex:1 1 0;min-width:0;max-width:46px;width:auto;height:auto;aspect-ratio:1;font-size:clamp(11px,3.4vw,16px)}
+.ball.pb{background:var(--bonus);color:#fff}
+.pbtag{font:600 11px "Barlow Condensed",sans-serif;color:var(--bonus);letter-spacing:.04em;align-self:center;flex:none}
 .pred .score b{font:600 22px "Barlow Condensed",sans-serif;display:block}
 .pred .score span{font-size:12px;color:var(--muted)}
-.pred .why{grid-column:2/4;font-size:13px;color:var(--muted)}
+.pred .why{grid-area:why;font-size:13px;color:var(--muted)}
 .meter{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--heat0);width:120px;margin-left:auto;margin-top:4px}
 .meter i:nth-child(1){background:var(--hit)}.meter i:nth-child(2){background:var(--heat2)}.meter i:nth-child(3){background:var(--bonus)}
 .gamecards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;align-items:start}
@@ -194,12 +198,13 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .gcard[open] .chev{transform:rotate(180deg)}
 .gcard .row{display:flex;align-items:center;gap:6px}
 .gcard .rk{font:600 13px "Barlow Condensed",sans-serif;color:var(--muted);width:20px;flex:none}
-.gcard .nums{display:flex;flex-wrap:wrap;gap:3px}
-.gcard .nums span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:500 12px "IBM Plex Mono",monospace;background:var(--hit-soft);color:var(--ink)}
+.gcard .nums{display:flex;flex-wrap:nowrap;gap:3px;flex:1;min-width:0}
+.gcard .nums span{flex:1 1 0;min-width:0;max-width:30px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:500 12px "IBM Plex Mono",monospace;background:var(--hit-soft);color:var(--ink)}
 .gcard .row.first .nums span{background:var(--hit);color:var(--hit-ink)}
+.gcard .nums span.pb,.gcard .row.first .nums span.pb{background:var(--bonus);color:#fff}
 .gcard .more{padding:0 12px 10px;display:flex;flex-direction:column;gap:5px}
 .gcard .open{margin-top:4px;align-self:flex-start;font:600 13px Barlow,sans-serif;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
-@media (max-width:520px){.pred{grid-template-columns:auto 1fr}.pred .score{grid-column:1/3;text-align:left}.pred .why{grid-column:1/3}.meter{margin-left:0}}
+
 .tldr{background:var(--yellow);color:var(--yellow-ink);border-radius:6px;padding:12px 16px;font-size:15.5px;line-height:1.45}
 .tldr b{font:700 13px "Barlow Condensed",sans-serif;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:2px}
 @media (max-width:520px){h1{font-size:28px}.drawdate{min-width:0}}
@@ -235,6 +240,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <ul style="margin-top:8px">
         <li><b>Popular numbers (50%):</b> numbers that have come up more often than average score higher.</li>
         <li><b>Pairs (30%):</b> numbers that have come out together before score higher.</li>
+        <li><b>PowerBall:</b> for PowerBall games, #1 gets the most-drawn PowerBall, #2 the next, and so on.</li>
         <li><b>Normal shape (20%):</b> sets that look like a typical draw (total, odd/even and low/high mix) score higher.</li>
         <li>No set has ever been drawn before, and no two sets share more than 2 numbers.</li>
       </ul>
@@ -826,6 +832,9 @@ function rankedFive(g){
   L.forEach(x=>{x.pn=x.num/mn;x.pp=x.pr/mp;x.ps=x.sh/ms;x.score=.5*x.pn+.3*x.pp+.2*x.ps});
   L.sort((a,b)=>b.score-a.score);
   const out=[];for(const x of L){if(out.every(o=>o.s.filter(v=>x.s.includes(v)).length<=2))out.push(x);if(out.length===5)break}
+  if(g.pbBall){const c=new Array(21).fill(0);D.forEach(d=>{if(d[2])c[d[2]]++});
+    const order=Array.from({length:20},(_,i)=>i+1).sort((a,b)=>c[b]-c[a]||a-b);
+    out.forEach((x,i)=>{x.pb=order[i];x.pbCount=c[order[i]]})}
   game=keep; return {sets:out,Lr};
 }
 const PRED_CACHE={};
@@ -838,13 +847,13 @@ function renderPred(){
     const pairs=[];for(let a=0;a<k;a++)for(let b=a+1;b<k;b++){const c=Lr.pair.get(x.s[a]*100+x.s[b]);if(c>=2)pairs.push(`${x.s[a]}+${x.s[b]} ×${c}`)}
     const F=features([0,x.s]);
     return `<li class="pred${i?"":" first"}"><span class="rank">#${i+1}</span>
-      <div class="balls">${x.s.map(v=>`<span class="ball">${String(v).padStart(2,"0")}</span>`).join("")}</div>
+      <div class="balls">${x.s.map(v=>`<span class="ball">${String(v).padStart(2,"0")}</span>`).join("")}${x.pb?`<span class="pbtag">PB</span><span class="ball pb" title="PowerBall, drawn ${x.pbCount} times">${String(x.pb).padStart(2,"0")}</span>`:""}</div>
       <div class="score"><b class="num">${Math.round(100*x.score/top)}</b><span>score</span>
         <div class="meter" title="numbers ${Math.round(x.pn*50)} · pairs ${Math.round(x.pp*30)} · shape ${Math.round(x.ps*20)}"><i style="width:${x.pn*50}%"></i><i style="width:${x.pp*30}%"></i><i style="width:${x.ps*20}%"></i></div></div>
-      <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.</span></li>`}).join("");
+      <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.${x.pb?` PowerBall ${x.pb}: drawn ${x.pbCount} times, the #${i+1} most drawn.`:""}</span></li>`}).join("");
   $("predtrack").textContent="How well has this worked? When we built sets this way from earlier draws and tested them on later ones, they did better than random picks in some tests and worse in others (from 12% of random sets beaten in Lotto to 78% in Daily Lotto Plus). So there's no reliable edge.";
   const shortWhen=w=>w.split("(")[0].replace(", about"," ·").replace(/,\s*$/,"").replace(/^Daily, /,"Daily · ").trim();
-  const row=(x,i)=>`<div class="row${i?"":" first"}"><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}</span></div>`;
+  const row=(x,i)=>`<div class="row${i?"":" first"}"><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}${x.pb?`<span class="pb" title="PowerBall">${x.pb}</span>`:""}</span></div>`;
   $("predall").innerHTML=DATA.map(g=>{const S=predsFor(g).sets;return `<details class="gcard${g===game?" cur":""}"><summary><span class="top"><span class="name">${g.name}</span><span class="when">${shortWhen(g.when)} <span class="chev">▼</span></span></span>${row(S[0],0)}</summary>
     <div class="more">${S.slice(1).map((x,i)=>row(x,i+1)).join("")}${g===game?"":`<button class="open" data-k="${g.key}">Open ${g.name}</button>`}</div></details>`}).join("");
   $("predall").querySelectorAll(".open").forEach(b=>b.onclick=()=>{game=DATA.find(g=>g.key===b.dataset.k);store.set("game",game.key);idx=game.draws.length-1;selGroup=null;all();window.scrollTo({top:0,behavior:"smooth"})});
