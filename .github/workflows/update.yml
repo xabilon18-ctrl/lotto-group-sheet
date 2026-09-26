@@ -2,9 +2,10 @@ name: Update results
 
 on:
   schedule:
-    # SA draws finish ~21:00 SAST (19:00 UTC); UK49s Teatime ~16:49 UTC.
-    # GitHub often starts scheduled runs late, so a second run early morning catches anything missed.
-    - cron: "30 20 * * *"
+    # Every hour from 12:15 to 23:15 UTC (14:15-01:15 SAST), so each draw lands soon after it's published:
+    # UK49s Lunchtime 12:49 UK time, Teatime 17:49 UK time, SA draws about 21:00 SAST.
+    # One early-morning run catches anything the results sites posted late.
+    - cron: "15 12-23 * * *"
     - cron: "0 4 * * *"
   workflow_dispatch:
   push:
@@ -19,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,8 +30,10 @@ jobs:
       - name: Fetch new draws
         run: python update.py
       - name: Commit if anything changed
+        id: commit
         run: |
-          if git diff --quiet data.json; then echo "No new draws"; exit 0; fi
+          if git diff --quiet data.json; then echo "No new draws"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
           git config user.name "results-bot"
           git config user.email "results-bot@users.noreply.github.com"
           git add data.json
@@ -37,6 +42,8 @@ jobs:
 
   deploy:
     needs: update
+    # republish only when there's a new draw, or when the app itself changed (push / manual run)
+    if: needs.update.outputs.changed == 'true' || github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       pages: write

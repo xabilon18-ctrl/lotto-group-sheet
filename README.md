@@ -5,6 +5,6 @@ A school project that maps South African Lotto, PowerBall, Daily Lotto and UK49s
 - `index.html`: the app (tabs: Predictions, Sheet, Groups, Patterns, Moon & stars, Formula lab)
 - `data.json`: every 2026 draw, updated automatically
 - `update.py`: fetches new draws, cross-checks them between results sites, and only appends confirmed ones
-- `.github/workflows/update.yml`: runs the update every evening and early morning, then republishes the site
+- `.github/workflows/update.yml`: runs the update every hour from 14:15 to 01:15 SAST (after each Lunchtime, Teatime and SA draw) plus 06:00, and republishes the site when a new draw arrives
 
 Results come from unofficial results sites. Check any ticket against the official National Lottery site before claiming.
