@@ -1,0 +1,56 @@
+name: Update results
+
+on:
+  schedule:
+    # SA draws finish ~21:00 SAST (19:00 UTC); UK49s Teatime ~16:49 UTC.
+    # GitHub often starts scheduled runs late, so a second run early morning catches anything missed.
+    - cron: "30 20 * * *"
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch new draws
+        run: python update.py
+      - name: Commit if anything changed
+        run: |
+          if git diff --quiet data.json; then echo "No new draws"; exit 0; fi
+          git config user.name "results-bot"
+          git config user.email "results-bot@users.noreply.github.com"
+          git add data.json
+          git commit -m "Add new draws $(date -u +%Y-%m-%d)"
+          git push
+
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: mkdir _site && cp index.html data.json _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
