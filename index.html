@@ -240,10 +240,18 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 @media (min-width:1400px){.predlist{grid-template-columns:repeat(4,1fr)}.pred.first{grid-column:1/-1}}
 
 /* old Safari (before iOS 14.5) ignores gap on flex boxes: space with margins instead */
-.no-flexgap .chips>*,.no-flexgap .balls>*,.no-flexgap .legend>*,.no-flexgap .btns>*,.no-flexgap .nums>*,.no-flexgap .list>*,.no-flexgap .controls>*,.no-flexgap .pick-list>*,.no-flexgap .row>*,.no-flexgap .row2>*,.no-flexgap .nav>*,.no-flexgap .drawbar>*,.no-flexgap .spark>*,.no-flexgap .gcard .top>*{margin-right:6px;margin-bottom:6px}
-.no-flexgap .wrap>*,.no-flexgap .tabpanel>*,.no-flexgap section>*,.no-flexgap header.top>*,.no-flexgap .panel>*,.no-flexgap .res>*,.no-flexgap .lab-out>*,.no-flexgap .lab-controls>*,.no-flexgap .predlist>*,.no-flexgap .rep-card>*,.no-flexgap .verdict>*,.no-flexgap .foot>*,.no-flexgap .stat>*,.no-flexgap .gcard summary>*,.no-flexgap .gcard .more>*,.no-flexgap .top5>*,.no-flexgap .formula .steps>*,.no-flexgap ul>*{margin-bottom:10px}
+.no-flexgap .chips>*,.no-flexgap .balls>*,.no-flexgap .legend>*,.no-flexgap .btns>*,.no-flexgap .nums>*,.no-flexgap .list>*,.no-flexgap .controls>*,.no-flexgap .pick-list>*,.no-flexgap .row>*,.no-flexgap .row2>*,.no-flexgap .nav>*,.no-flexgap .drawbar>*,.no-flexgap .spark>*,.no-flexgap .gcard .top>*,.no-flexgap .cardbtns>*{margin-right:6px;margin-bottom:6px}
+.no-flexgap .wrap>*,.no-flexgap .tabpanel>*,.no-flexgap section>*,.no-flexgap header.top>*,.no-flexgap .panel>*,.no-flexgap .res>*,.no-flexgap .lab-out>*,.no-flexgap .lab-controls>*,.no-flexgap .predlist>*,.no-flexgap .rep-card>*,.no-flexgap .verdict>*,.no-flexgap .foot>*,.no-flexgap .stat>*,.no-flexgap .gcard summary>*,.no-flexgap .gcard .more>*,.no-flexgap .top5>*,.no-flexgap .sheetbox>*,.no-flexgap .formula .steps>*,.no-flexgap ul>*{margin-bottom:10px}
 .no-flexgap .wrap>*,.no-flexgap .tabpanel>*{margin-bottom:24px}
 .no-flexgap .tabbar>*{margin:0 1px}
+
+.cardbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.open.share{background:var(--yellow);color:var(--yellow-ink);border-color:var(--yellow)}
+a.btn{text-decoration:none;display:inline-block}
+.modal{position:fixed;left:0;right:0;top:0;bottom:0;z-index:50;background:rgba(10,12,16,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.sheetbox{background:var(--card);border-radius:10px;padding:16px;max-width:460px;width:100%;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.sheetbox h3{color:var(--ink);text-transform:none;letter-spacing:0;font-size:20px}
+.sheetbox img{width:100%;height:auto;border-radius:8px;display:block;-webkit-touch-callout:default}
 </style>
 </head>
 <body>
@@ -271,6 +279,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <p class="tldr"><b>In short</b>These are the app's 5 best guesses for the next draw. They use the numbers that come up most, numbers that often come up together, and what a normal draw looks like. Our tests show these guesses don't reliably beat random picks, so treat them as an experiment.</p>
     <p class="muted" id="predintro"></p>
     <ol class="predlist" id="predlist"></ol>
+    <div class="btns"><button class="btn primary" id="sharetop">Share these 5 as a picture</button></div>
     <div class="panel">
       <h3>How the score works</h3>
       <ul style="margin-top:8px">
@@ -448,6 +457,14 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
   </div>
 
+  <div class="modal" id="sharemodal" hidden role="dialog" aria-modal="true" aria-labelledby="sharetitle">
+    <div class="sheetbox">
+      <h3 id="sharetitle">Share your predictions</h3>
+      <img id="shareimg" alt="Prediction card picture">
+      <p class="muted" id="sharehint"></p>
+      <div class="btns"><button class="btn primary" id="sharego">Share</button><a class="btn" id="sharesave" download>Save image</a><button class="btn" id="shareclose">Close</button></div>
+    </div>
+  </div>
   <div class="foot">
     <p id="srcline"></p>
     <p>A school project. Each draw is random, and no pattern changes the odds of the next one. If you play, only use money you can afford to lose. Free help: National Responsible Gambling Programme, 0800 006 008.</p>
@@ -901,10 +918,69 @@ function renderPred(){
   const shortWhen=w=>w.split("(")[0].replace(", about"," ·").replace(/,\s*$/,"").replace(/^Daily, /,"Daily · ").trim();
   const row=(x,i)=>`<div class="row${i?"":" first"}"><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}${x.pb?`<span class="pb" title="PowerBall">${x.pb}</span>`:""}</span></div>`;
   $("predall").innerHTML=DATA.map(g=>{const S=predsFor(g).sets;return `<details class="gcard${g===game?" cur":""}"><summary><span class="top"><span class="name">${g.name}</span><span class="when">${shortWhen(g.when)} <span class="chev">▼</span></span></span>${row(S[0],0)}</summary>
-    <div class="more">${S.slice(1).map((x,i)=>row(x,i+1)).join("")}${g===game?"":`<button class="open" data-k="${g.key}">Open ${g.name}</button>`}</div></details>`}).join("");
+    <div class="more">${S.slice(1).map((x,i)=>row(x,i+1)).join("")}<div class="cardbtns"><button class="open share" data-share="${g.key}">Share picture</button>${g===game?"":`<button class="open" data-k="${g.key}">Open ${g.name}</button>`}</div></div></details>`}).join("");
   cardMode();
-  $("predall").querySelectorAll(".open").forEach(b=>b.onclick=()=>{game=DATA.find(g=>g.key===b.dataset.k);store.set("game",game.key);idx=game.draws.length-1;selGroup=null;all();window.scrollTo({top:0,behavior:"smooth"})});
+  $("predall").querySelectorAll("[data-share]").forEach(b=>b.onclick=e=>{e.stopPropagation();openShare(DATA.find(g=>g.key===b.dataset.share))});
+  $("predall").querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{game=DATA.find(g=>g.key===b.dataset.k);store.set("game",game.key);idx=game.draws.length-1;selGroup=null;all();window.scrollTo({top:0,behavior:"smooth"})});
 }
+// ---------- share a prediction card as a picture ----------
+function todayLong(){return new Date().toLocaleDateString("en-ZA",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+function shareCanvas(g){
+  const sets=predsFor(g).sets, W=1080, P=64, rowH=128, ball=92, gap=16;
+  const H=330+sets.length*rowH+190, c=document.createElement("canvas"), x=c.getContext("2d");
+  c.width=W;c.height=H;
+  const F=(w,s,f)=>w+" "+s+"px "+(f||'"Barlow Condensed", "Arial Narrow", sans-serif');
+  x.fillStyle="#15171c";x.fillRect(0,0,W,H);
+  x.fillStyle="#f2e01c";x.fillRect(0,0,W,14);
+  x.fillStyle="#e8eaef";x.font=F(700,66);x.textBaseline="alphabetic";x.fillText(g.name+" predictions",P,118);
+  x.fillStyle="#f2e01c";x.font=F(600,40);x.fillText(todayLong(),P,178);
+  x.fillStyle="#9aa2b1";x.font=F(500,30,"Barlow, Arial, sans-serif");
+  x.fillText("Next draw: "+g.when.split("(")[0].replace(/,\s*$/,""),P,228);
+  x.fillText("Ranked from "+g.draws.length+" draws up to "+fmtDate(g.draws[g.draws.length-1][0]),P,268);
+  sets.forEach((s,i)=>{
+    const y=330+i*rowH, cy=y+rowH/2-10;
+    x.fillStyle=i?"#1f232b":"#26303f";roundRect(x,P-16,y-8,W-2*P+32,rowH-16,18);x.fill();
+    if(!i){x.strokeStyle="#f2e01c";x.lineWidth=4;roundRect(x,P-16,y-8,W-2*P+32,rowH-16,18);x.stroke()}
+    x.fillStyle=i?"#9aa2b1":"#e8eaef";x.font=F(700,50);x.textAlign="left";x.textBaseline="middle";x.fillText("#"+(i+1),P+8,cy);
+    const nums=s.s.slice(), n=nums.length+(s.pb?1:0), bw=Math.min(ball,(W-2*P-120-(n-1)*gap-(s.pb?56:0))/n);
+    let bx=P+118;
+    nums.forEach(v=>{drawBall(x,bx+bw/2,cy,bw/2,i?"#3f64c9":"#6d93ff",i?"#ffffff":"#0d1020",v);bx+=bw+gap});
+    if(s.pb){x.fillStyle="#f08b3e";x.font=F(700,30);x.textAlign="center";x.textBaseline="middle";x.fillText("PB",bx+18,cy+2);bx+=56;drawBall(x,bx+bw/2,cy,bw/2,"#f08b3e","#ffffff",s.pb)}
+    x.textAlign="left";
+  });
+  const fy=330+sets.length*rowH+40;
+  x.fillStyle="#9aa2b1";x.font=F(400,27,"Barlow, Arial, sans-serif");x.textBaseline="alphabetic";
+  x.fillText("A school project. Picks come from past draws and don't",P,fy+10);
+  x.fillText("change the odds: every draw is random.",P,fy+46);
+  x.fillStyle="#f2e01c";x.font=F(600,32);x.fillText("xabilon18-ctrl.github.io/lotto-group-sheet",P,fy+110);
+  return c;
+}
+function roundRect(x,l,t,w,h,r){x.beginPath();x.moveTo(l+r,t);x.arcTo(l+w,t,l+w,t+h,r);x.arcTo(l+w,t+h,l,t+h,r);x.arcTo(l,t+h,l,t,r);x.arcTo(l,t,l+w,t,r);x.closePath()}
+function drawBall(x,cx,cy,r,fill,ink,v){x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fillStyle=fill;x.fill();x.fillStyle=ink;x.font='600 '+Math.round(r*0.95)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.textBaseline="middle";x.fillText(String(v).padStart(2,"0"),cx,cy+2)}
+let SHARE_BLOB=null, SHARE_NAME="";
+function openShare(g){
+  const go=()=>{
+    const c=shareCanvas(g), url=c.toDataURL("image/png");
+    SHARE_NAME=g.name.replace(/\s+/g,"-").toLowerCase()+"-predictions-"+new Date().toISOString().slice(0,10)+".png";
+    $("shareimg").src=url;$("sharesave").href=url;$("sharesave").setAttribute("download",SHARE_NAME);
+    SHARE_BLOB=null;if(c.toBlob)c.toBlob(b=>{SHARE_BLOB=b});
+    const canFiles=!!(navigator.canShare&&window.File&&navigator.canShare({files:[new File([new Blob(["x"])],"x.png",{type:"image/png"})]}));
+    $("sharego").hidden=!canFiles;
+    const touch=("ontouchstart" in window)||navigator.maxTouchPoints>0;
+    $("sharehint").textContent=canFiles?"Tap Share to send it (WhatsApp, Messages, email), or save it.":touch?"Press and hold the picture, then choose \"Save to Photos\" (or use Save image).":"Use Save image to download it, then send it however you like.";
+    $("sharemodal").hidden=false;
+  };
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go();
+}
+$("sharego").onclick=()=>{
+  if(!SHARE_BLOB)return;
+  const f=new File([SHARE_BLOB],SHARE_NAME,{type:"image/png"});
+  navigator.share({files:[f],title:"Lotto predictions",text:"My lotto predictions for "+todayLong()}).catch(()=>{});
+};
+$("shareclose").onclick=()=>{$("sharemodal").hidden=true};
+$("sharemodal").onclick=e=>{if(e.target===$("sharemodal"))$("sharemodal").hidden=true};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("sharemodal").hidden=true});
+$("sharetop").onclick=()=>openShare(game);
 // ---------- tabs ----------
 const TABS=["pred","sheet","groups","patterns","sky","lab"];
 function showTab(k,focus,top){
