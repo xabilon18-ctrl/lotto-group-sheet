@@ -484,7 +484,7 @@ a.btn{text-decoration:none;display:inline-block}
     <div class="sheetbox">
       <h3 id="sharetitle">Share your predictions</h3>
       <img id="shareimg" alt="Prediction card picture">
-      <p class="muted" id="sharehint"></p>
+      <p id="sharehint" style="font-size:15px"></p>
       <div class="btns"><button class="btn primary" id="sharego">Share</button><a class="btn" id="sharesave" download>Save image</a><button class="btn" id="shareclose">Close</button></div>
     </div>
   </div>
@@ -1058,6 +1058,7 @@ function reportCanvas(g,i){
   return c;
 }
 let SHARE_BLOB=null, SHARE_NAME="", SHARE_TEXT="";
+function dataURLtoBlob(u){const b=atob(u.split(",")[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:"image/png"})}
 function openShare(g){openShareCanvas(()=>shareCanvas(g),g.name.replace(/\s+/g,"-").toLowerCase()+"-predictions-"+new Date().toISOString().slice(0,10)+".png","My "+g.name+" predictions for "+todayLong())}
 function openShareCanvas(make,name,text,title){
   const go=()=>{
@@ -1065,11 +1066,14 @@ function openShareCanvas(make,name,text,title){
     const c=make(), url=c.toDataURL("image/png");
     SHARE_NAME=name;SHARE_TEXT=text;
     $("shareimg").src=url;$("sharesave").href=url;$("sharesave").setAttribute("download",SHARE_NAME);
-    SHARE_BLOB=null;if(c.toBlob)c.toBlob(b=>{SHARE_BLOB=b});
-    const canFiles=!!(navigator.canShare&&window.File&&navigator.canShare({files:[new File([new Blob(["x"])],"x.png",{type:"image/png"})]}));
-    $("sharego").hidden=!canFiles;
+    SHARE_BLOB=dataURLtoBlob(url);
+    const canFiles=!!(navigator.canShare&&window.File&&navigator.canShare({files:[new File([SHARE_BLOB],"x.png",{type:"image/png"})]}));
     const touch=("ontouchstart" in window)||navigator.maxTouchPoints>0;
-    $("sharehint").textContent=canFiles?"Tap Share to send it (WhatsApp, Messages, email), or save it.":touch?"Press and hold the picture, then choose \"Save to Photos\" (or use Save image).":"Use Save image to download it, then send it however you like.";
+    // phones and tablets: pictures belong in Photos, which only the share menu (or press-and-hold) can reach
+    $("sharesave").hidden=touch;
+    $("sharego").hidden=!canFiles;
+    $("sharego").textContent=touch?"Save to Photos":"Share";
+    $("sharehint").innerHTML=touch?(canFiles?'Tap <b>Save to Photos</b>, then choose <b>"Save Image"</b>. You can also send it from the same menu.':'<b>Press and hold the picture</b>, then tap <b>"Save to Photos"</b> (or "Add to Photos").'):(canFiles?"Save it as a file, or share it.":"Save it as a file, then send it however you like.");
     $("sharemodal").hidden=false;
   };
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go();
