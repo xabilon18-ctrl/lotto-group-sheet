@@ -268,6 +268,12 @@ a.btn{text-decoration:none;display:inline-block}
 .rep-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
 .rep-groups{margin-top:10px;font-size:14px}
 .no-flexgap .rrow>*,.no-flexgap .rep-head>*{margin-right:6px}
+
+.ball.bnp{background:transparent;color:var(--bonus);box-shadow:inset 0 0 0 2.5px var(--bonus)}
+.pbtag.bn{font-size:10px}
+.gcard .nums span.bnp{background:transparent;color:var(--bonus);box-shadow:inset 0 0 0 2px var(--bonus)}
+.rrow .nums span.bnm{box-shadow:inset 0 0 0 1.5px var(--bonus);color:var(--bonus);border-radius:50%}
+.rrow .nums span.bnh{background:var(--bonus);color:#fff;box-shadow:none}
 </style>
 </head>
 <body>
@@ -306,7 +312,7 @@ a.btn{text-decoration:none;display:inline-block}
       <ul style="margin-top:8px">
         <li><b>Popular numbers (50%):</b> numbers that have come up more often than average score higher.</li>
         <li><b>Pairs (30%):</b> numbers that have come out together before score higher.</li>
-        <li><b>PowerBall:</b> for PowerBall games, #1 gets the most-drawn PowerBall, #2 the next, and so on.</li>
+        <li><b>PowerBall, bonus and booster:</b> #1 gets the most-drawn PowerBall (or bonus / booster ball), #2 the next, and so on. In Lotto and UK49s you don't pick a bonus: it counts when the bonus ball matches one of your numbers, so the orange-ringed ball is just a guess at which number it will be. <span class="muted">Check: the most-drawn bonus balls from January to June caught about as many later bonus balls as random numbers did.</span></li>
         <li><b>Normal shape (20%):</b> sets that look like a typical draw (total, odd/even and low/high mix) score higher.</li>
         <li>No set has ever been drawn before, and no two sets share more than 2 numbers.</li>
       </ul>
@@ -892,6 +898,7 @@ $("decoy").onclick=()=>{
     for(let s=0;s<100;s++){const R=rng(1000+s),labs=v.map(()=>Math.floor(R()*12));const b=shuffleTest(v,labs,300,s+5)/300*1000;if(b<50)notable++;if(b<10)strong++}
     $("decoyout").innerHTML=`<p style="color:var(--ink)"><b>${notable}</b> of 100 made-up groupings came out <b>notable</b>, and <b>${strong}</b> came out <b>strong</b>, for ${$("cmpfeat").selectedOptions[0].text.toLowerCase()} in ${game.name}.</p><p style="margin-top:6px">These groupings are pure nonsense, yet some still \"pass\". So a single notable result proves nothing. A real effect would have to pass again and again, on new draws and in other games.</p>`},20)};
 // ---------- Predictions ----------
+const BNAME=g=>g.key==='lunch'||g.key==='tea'?'Booster':'Bonus';
 function rankedFive(g){
   const keep=game; game=g;
   const D=g.draws,Lr=learn(D),M=g.max,k=g.k,n=D.length,R=rng(41);
@@ -915,6 +922,9 @@ function rankedFive(g){
   if(g.pbBall){const c=new Array(21).fill(0);D.forEach(d=>{if(d[2])c[d[2]]++});
     const order=Array.from({length:20},(_,i)=>i+1).sort((a,b)=>c[b]-c[a]||a-b);
     out.forEach((x,i)=>{x.pb=order[i];x.pbCount=c[order[i]]})}
+  else if(g.bonus){const c=new Array(M+1).fill(0);D.forEach(d=>{if(d[2])c[d[2]]++});
+    const order=Array.from({length:M},(_,i)=>i+1).sort((a,b)=>c[b]-c[a]||a-b), used=[];
+    out.forEach(x=>{const b=order.find(v=>x.s.indexOf(v)<0&&used.indexOf(v)<0);used.push(b);x.bn=b;x.bnCount=c[b];x.bnRank=order.indexOf(b)+1})}
   game=keep; return {sets:out,Lr};
 }
 function onMQ(mq,fn){mq.addEventListener?mq.addEventListener("change",fn):mq.addListener(fn)}
@@ -935,14 +945,15 @@ function renderPred(){
     const pairs=[];for(let a=0;a<k;a++)for(let b=a+1;b<k;b++){const c=Lr.pair.get(x.s[a]*100+x.s[b]);if(c>=2)pairs.push(`${x.s[a]}+${x.s[b]} ×${c}`)}
     const F=features([0,x.s]);
     return `<li class="pred${i?"":" first"}"><span class="rank">#${i+1}</span>
-      <div class="balls">${x.s.map(v=>`<span class="ball">${String(v).padStart(2,"0")}</span>`).join("")}${x.pb?`<span class="pbtag">PB</span><span class="ball pb" title="PowerBall, drawn ${x.pbCount} times">${String(x.pb).padStart(2,"0")}</span>`:""}</div>
+      <div class="balls">${x.s.map(v=>`<span class="ball">${String(v).padStart(2,"0")}</span>`).join("")}${x.pb?`<span class="pbtag">PB</span><span class="ball pb" title="PowerBall, drawn ${x.pbCount} times">${String(x.pb).padStart(2,"0")}</span>`:""}${x.bn?`<span class="pbtag bn">${BNAME(game).toUpperCase()}</span><span class="ball bnp" title="${BNAME(game)} guess">${String(x.bn).padStart(2,"0")}</span>`:""}</div>
       <div class="score"><b class="num">${Math.round(100*x.score/top)}</b><span>score</span>
         <div class="meter" title="numbers ${Math.round(x.pn*50)} · pairs ${Math.round(x.pp*30)} · shape ${Math.round(x.ps*20)}"><i style="width:${x.pn*50}%"></i><i style="width:${x.pp*30}%"></i><i style="width:${x.ps*20}%"></i></div></div>
-      <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.${x.pb?` PowerBall ${x.pb}: drawn ${x.pbCount} times, the #${i+1} most drawn.`:""}</span></li>`}).join("");
+      <span class="why">${strong.length?`Strong numbers: ${strong.map(v=>v+" (×"+Lr.f[v]+")").join(", ")}. `:""}${pairs.length?`Pairs seen before: ${pairs.slice(0,4).join(", ")}. `:""}Sum ${F.sum}, ${F.odd} odd, ${F.low} low.${x.pb?` PowerBall ${x.pb}: drawn ${x.pbCount} times, the #${i+1} most drawn.`:""}${x.bn?` ${BNAME(game)} guess ${x.bn}: drawn as the ${BNAME(game).toLowerCase()} ${x.bnCount} times.`:""}</span></li>`}).join("");
   $("predtrack").textContent="How well has this worked? When we built sets this way from earlier draws and tested them on later ones, they did better than random picks in some tests and worse in others (from 12% of random sets beaten in Lotto to 78% in Daily Lotto Plus). So there's no reliable edge.";
   const shortWhen=w=>w.split("(")[0].replace(", about"," ·").replace(/,\s*$/,"").replace(/^Daily, /,"Daily · ").trim();
-  const row=(x,i)=>`<div class="row${i?"":" first"}"><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}${x.pb?`<span class="pb" title="PowerBall">${x.pb}</span>`:""}</span></div>`;
-  $("predall").innerHTML=DATA.map(g=>{const S=predsFor(g).sets;return `<details class="gcard${g===game?" cur":""}"><summary><span class="top"><span class="name">${g.name}</span><span class="when">${shortWhen(g.when)} <span class="chev">▼</span></span></span>${row(S[0],0)}</summary>
+  let g=null;
+  const row=(x,i)=>`<div class="row${i?"":" first"}"><span class="rk">#${i+1}</span><span class="nums">${x.s.map(v=>`<span>${v}</span>`).join("")}${x.pb?`<span class="pb" title="PowerBall">${x.pb}</span>`:""}${x.bn?`<span class="bnp" title="${BNAME(g)} guess">${x.bn}</span>`:""}</span></div>`;
+  $("predall").innerHTML=DATA.map(gg=>{g=gg;const S=predsFor(g).sets;return `<details class="gcard${g===game?" cur":""}"><summary><span class="top"><span class="name">${g.name}</span><span class="when">${shortWhen(g.when)} <span class="chev">▼</span></span></span>${row(S[0],0)}</summary>
     <div class="more">${S.slice(1).map((x,i)=>row(x,i+1)).join("")}<div class="cardbtns"><button class="open share" data-share="${g.key}">Share picture</button>${g===game?"":`<button class="open" data-k="${g.key}">Open ${g.name}</button>`}</div></div></details>`}).join("");
   cardMode();
   $("predall").querySelectorAll("[data-share]").forEach(b=>b.onclick=e=>{e.stopPropagation();openShare(DATA.find(g=>g.key===b.dataset.share))});
@@ -967,20 +978,22 @@ function shareCanvas(g){
     x.fillStyle=i?"#1f232b":"#26303f";roundRect(x,P-16,y-8,W-2*P+32,rowH-16,18);x.fill();
     if(!i){x.strokeStyle="#f2e01c";x.lineWidth=4;roundRect(x,P-16,y-8,W-2*P+32,rowH-16,18);x.stroke()}
     x.fillStyle=i?"#9aa2b1":"#e8eaef";x.font=F(700,50);x.textAlign="left";x.textBaseline="middle";x.fillText("#"+(i+1),P+8,cy);
-    const nums=s.s.slice(), n=nums.length+(s.pb?1:0), bw=Math.min(ball,(W-2*P-120-(n-1)*gap-(s.pb?56:0))/n);
+    const nums=s.s.slice(), ex=s.pb||s.bn, n=nums.length+(ex?1:0), bw=Math.min(ball,(W-2*P-120-(n-1)*gap-(ex?56:0))/n);
     let bx=P+118;
     nums.forEach(v=>{drawBall(x,bx+bw/2,cy,bw/2,i?"#3f64c9":"#6d93ff",i?"#ffffff":"#0d1020",v);bx+=bw+gap});
     if(s.pb){x.fillStyle="#f08b3e";x.font=F(700,30);x.textAlign="center";x.textBaseline="middle";x.fillText("PB",bx+18,cy+2);bx+=56;drawBall(x,bx+bw/2,cy,bw/2,"#f08b3e","#ffffff",s.pb)}
+    if(s.bn){x.fillStyle="#f08b3e";x.font=F(700,30);x.textAlign="center";x.textBaseline="middle";x.fillText("B",bx+18,cy+2);bx+=56;ringBall(x,bx+bw/2,cy,bw/2,"#f08b3e",s.bn)}
     x.textAlign="left";
   });
   const fy=330+sets.length*rowH+40;
   x.fillStyle="#9aa2b1";x.font=F(400,27,"Barlow, Arial, sans-serif");x.textBaseline="alphabetic";
-  x.fillText("A school project. Picks come from past draws and don't",P,fy+10);
+  x.fillText((sets[0].bn?"B = "+BNAME(g).toLowerCase()+" ball guess.  ":"")+"A school project. Picks come from past draws and don't",P,fy+10);
   x.fillText("change the odds: every draw is random.",P,fy+46);
   x.fillStyle="#f2e01c";x.font=F(600,32);x.fillText("xabilon18-ctrl.github.io/lotto-group-sheet",P,fy+110);
   return c;
 }
 function roundRect(x,l,t,w,h,r){x.beginPath();x.moveTo(l+r,t);x.arcTo(l+w,t,l+w,t+h,r);x.arcTo(l+w,t+h,l,t+h,r);x.arcTo(l,t+h,l,t,r);x.arcTo(l,t,l+w,t,r);x.closePath()}
+function ringBall(x,cx,cy,r,col,v){x.beginPath();x.arc(cx,cy,r-2,0,Math.PI*2);x.strokeStyle=col;x.lineWidth=4;x.stroke();x.fillStyle=col;x.font='600 '+Math.round(r*0.9)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.textBaseline="middle";x.fillText(String(v).padStart(2,"0"),cx,cy+2)}
 function drawBall(x,cx,cy,r,fill,ink,v){x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fillStyle=fill;x.fill();x.fillStyle=ink;x.font='600 '+Math.round(r*0.95)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.textBaseline="middle";x.fillText(String(v).padStart(2,"0"),cx,cy+2)}
 // ---------- predictions made before a draw, and how they did ----------
 const AT_CACHE={};
@@ -1002,7 +1015,7 @@ function groupsAt(g,i){
 function report(g,i){
   const P=predsAt(g,i); if(!P)return null;
   const d=g.draws[i], s=new Set(d[1]), k=g.k;
-  const rows=P.map((x,r)=>{const hit=x.s.filter(v=>s.has(v));return{r,x,hit:hit.length,pbHit:!!(g.pbBall&&x.pb===d[2])}});
+  const rows=P.map((x,r)=>{const hit=x.s.filter(v=>s.has(v));return{r,x,hit:hit.length,pbHit:!!(g.pbBall&&x.pb===d[2]),bnHit:!!(x.bn&&x.bn===d[2]),bnOnTicket:!!(g.bonus&&d[2]!=null&&x.s.indexOf(d[2])>=0)}});
   const best=rows.reduce((a,b)=>(b.hit+(b.pbHit?.5:0))>(a.hit+(a.pbHit?.5:0))?b:a,rows[0]);
   const total=rows.reduce((a,b)=>a+b.hit,0), avg=k*k/g.max, exp5=5*avg;
   const verdict=total>=exp5+1?"Better than a random ticket":total<=exp5-1?"Worse than a random ticket":"About the same as a random ticket";
@@ -1012,7 +1025,7 @@ function reportHTML(g,i){
   const R0=report(g,i);
   if(!R0)return `<p class="muted">Not enough earlier draws to predict this one. Predictions start from the 31st draw of the year.</p>`;
   const s=new Set(R0.d[1]);
-  const rows=R0.rows.map(o=>`<div class="rrow${o===R0.best&&o.hit>0?" best":""}"><span class="rk">#${o.r+1}</span><span class="nums">${o.x.s.map(v=>`<span class="${s.has(v)?"hit":""}">${v}</span>`).join("")}${o.x.pb?`<span class="${o.pbHit?"pbh":"pbm"}">${o.x.pb}</span>`:""}</span><span class="sc">${o.hit} of ${g.k}${o.x.pb?(o.pbHit?" + PB":""):""}</span></div>`).join("");
+  const rows=R0.rows.map(o=>`<div class="rrow${o===R0.best&&o.hit>0?" best":""}"><span class="rk">#${o.r+1}</span><span class="nums">${o.x.s.map(v=>`<span class="${s.has(v)?"hit":""}">${v}</span>`).join("")}${o.x.pb?`<span class="${o.pbHit?"pbh":"pbm"}">${o.x.pb}</span>`:""}${o.x.bn?`<span class="${o.bnHit?"bnh":"bnm"}" title="${BNAME(g)} guess">${o.x.bn}</span>`:""}</span><span class="sc">${o.hit} of ${g.k}${o.pbHit?" + PB":""}${o.bnOnTicket?" + "+BNAME(g).toLowerCase():""}${o.bnHit?" · "+BNAME(g).toLowerCase()+" ✓":""}</span></div>`).join("");
   const G=R0.groups;
   return `<div class="rep-head"><span><b>${fmtDate(R0.d[0])}</b> <span class="muted">· predicted from draws up to ${fmtDate(R0.prev)}</span></span><button class="btn primary" data-repshare="${i}">Share picture</button></div>
     <div class="rep-rows">${rows}</div>
@@ -1021,7 +1034,7 @@ function reportHTML(g,i){
       <div class="stat"><span class="v num">${R0.total} <span class="muted" style="font-size:15px">vs ${R0.exp5.toFixed(1)} average</span></span><span class="l">numbers matched across all 5</span></div>
       <div class="stat"><span class="v" style="font-size:19px">${R0.verdict}</span><span class="l">a random ticket matches ${R0.avg.toFixed(2)} numbers on average</span></div>
     </div>
-    <p class="rep-groups"><b>Your sheet:</b> ${G.two.length?"groups with 2+ numbers this draw: "+G.two.map(x=>"G"+(x[1]+1)+" ("+x[0]+")").join(", "):"no group caught 2 or more numbers this draw"}. The hot group before the draw was <b>G${G.hot+1}</b>, and ${G.hotHits} of its ${G.hotSize} numbers came out.</p>`;
+    ${g.bonus&&R0.d[2]!=null?`<p class="rep-groups"><b>${BNAME(g)} ball:</b> ${R0.d[2]}. ${R0.rows.some(o=>o.bnHit)?"Guessed right on ticket #"+(R0.rows.find(o=>o.bnHit).r+1)+".":"None of the 5 guesses got it."} ${R0.rows.some(o=>o.bnOnTicket)?"It was on ticket "+R0.rows.filter(o=>o.bnOnTicket).map(o=>"#"+(o.r+1)).join(", ")+", which counts toward bonus prizes.":""}</p>`:""}<p class="rep-groups"><b>Your sheet:</b> ${G.two.length?"groups with 2+ numbers this draw: "+G.two.map(x=>"G"+(x[1]+1)+" ("+x[0]+")").join(", "):"no group caught 2 or more numbers this draw"}. The hot group before the draw was <b>G${G.hot+1}</b>, and ${G.hotHits} of its ${G.hotSize} numbers came out.</p>`;
 }
 function wireRepShare(root,g){root.querySelectorAll("[data-repshare]").forEach(b=>b.onclick=()=>{const i=+b.dataset.repshare;openShareCanvas(()=>reportCanvas(g,i),g.name.replace(/\s+/g,"-").toLowerCase()+"-results-vs-predictions-"+g.draws[i][0]+".png","How my "+g.name+" predictions did on "+fmtDate(g.draws[i][0]),"Share results vs predictions")})}
 function renderLastReport(){const i=game.draws.length-1;$("lastreport").innerHTML=reportHTML(game,i);wireRepShare($("lastreport"),game)}
@@ -1043,10 +1056,11 @@ function reportCanvas(g,i){
     x.fillStyle=best?"#1d3a2a":"#1f232b";roundRect(x,P-16,y-6,W-2*P+32,rowH-14,16);x.fill();
     if(best){x.strokeStyle="#4fc486";x.lineWidth=3;roundRect(x,P-16,y-6,W-2*P+32,rowH-14,16);x.stroke()}
     x.fillStyle="#9aa2b1";x.font=F(700,44);x.textBaseline="middle";x.fillText("#"+(r+1),P+4,cy);
-    const n=o.x.s.length+(o.x.pb?1:0), bw=Math.min(78,(W-2*P-330-(n-1)*12)/n);let px=P+96;
+    const n=o.x.s.length+((o.x.pb||o.x.bn)?1:0), bw=Math.min(78,(W-2*P-330-(n-1)*12)/n);let px=P+96;
     o.x.s.forEach(v=>{const h=s.has(v);if(h)drawBall(x,px+bw/2,cy,bw/2,"#6d93ff","#0d1020",v);else{x.beginPath();x.arc(px+bw/2,cy,bw/2-2,0,Math.PI*2);x.strokeStyle="#4a505c";x.lineWidth=3;x.stroke();x.fillStyle="#8a93a3";x.font='600 '+Math.round(bw*0.45)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.fillText(String(v).padStart(2,"0"),px+bw/2,cy+2);x.textAlign="left"}px+=bw+12});
     if(o.x.pb){px+=8;if(o.pbHit)drawBall(x,px+bw/2,cy,bw/2,"#f08b3e","#ffffff",o.x.pb);else{x.beginPath();x.arc(px+bw/2,cy,bw/2-2,0,Math.PI*2);x.strokeStyle="#f08b3e";x.lineWidth=3;x.stroke();x.fillStyle="#f08b3e";x.font='600 '+Math.round(bw*0.45)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.fillText(String(o.x.pb).padStart(2,"0"),px+bw/2,cy+2);x.textAlign="left"}}
-    x.textAlign="right";x.fillStyle=best?"#4fc486":"#e8eaef";x.font=F(700,46);x.fillText(o.hit+" of "+k+(o.pbHit?" + PB":""),W-P,cy);x.textAlign="left";
+    if(o.x.bn){px+=8;if(o.bnHit)drawBall(x,px+bw/2,cy,bw/2,"#f08b3e","#ffffff",o.x.bn);else ringBall(x,px+bw/2,cy,bw/2,"#f08b3e",o.x.bn)}
+    x.textAlign="right";x.fillStyle=best?"#4fc486":"#e8eaef";x.font=F(700,46);x.fillText(o.hit+" of "+k+(o.pbHit?" + PB":"")+(o.bnOnTicket?" + B":""),W-P,cy);x.textAlign="left";
   });
   let fy=500+5*rowH+40;x.textBaseline="alphabetic";
   x.fillStyle="#e8eaef";x.font=F(700,40);x.fillText("Best ticket: "+R0.best.hit+" of "+k+"   ·   All 5: "+R0.total+" matched (average "+R0.exp5.toFixed(1)+")",P,fy);
