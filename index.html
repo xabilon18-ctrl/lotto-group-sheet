@@ -252,6 +252,22 @@ a.btn{text-decoration:none;display:inline-block}
 .sheetbox{background:var(--card);border-radius:10px;padding:16px;max-width:460px;width:100%;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .sheetbox h3{color:var(--ink);text-transform:none;letter-spacing:0;font-size:20px}
 .sheetbox img{width:100%;height:auto;border-radius:8px;display:block;-webkit-touch-callout:default}
+
+.cell.pred span{box-shadow:0 0 0 3px var(--yellow)}
+.rep-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.rep-rows{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.rrow{display:flex;align-items:center;gap:8px}
+.rrow .rk{font:600 15px "Barlow Condensed",sans-serif;color:var(--muted);width:24px;flex:none}
+.rrow .nums{display:flex;gap:3px;flex-wrap:nowrap}
+.rrow .nums span{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:500 12px "IBM Plex Mono",monospace;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--muted)}
+.rrow .nums span.hit{background:var(--hit);color:var(--hit-ink);box-shadow:none}
+.rrow .nums span.pbm{box-shadow:inset 0 0 0 1.5px var(--bonus);color:var(--bonus)}
+.rrow .nums span.pbh{background:var(--bonus);color:#fff;box-shadow:none}
+.rrow .sc{margin-left:auto;font:600 16px "Barlow Condensed",sans-serif;white-space:nowrap}
+.rrow.best .sc{color:var(--good)}
+.rep-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+.rep-groups{margin-top:10px;font-size:14px}
+.no-flexgap .rrow>*,.no-flexgap .rep-head>*{margin-right:6px}
 </style>
 </head>
 <body>
@@ -280,6 +296,11 @@ a.btn{text-decoration:none;display:inline-block}
     <p class="muted" id="predintro"></p>
     <ol class="predlist" id="predlist"></ol>
     <div class="btns"><button class="btn primary" id="sharetop">Share these 5 as a picture</button></div>
+  </section>
+  <section aria-labelledby="h-last">
+    <h2 id="h-last">How did the last predictions do?</h2>
+    <p class="muted">The 5 picks the app made before the latest draw, checked against what came out.</p>
+    <div class="panel" id="lastreport"></div>
     <div class="panel">
       <h3>How the score works</h3>
       <ul style="margin-top:8px">
@@ -316,9 +337,11 @@ a.btn{text-decoration:none;display:inline-block}
       <span><i style="background:var(--hit)"></i>drawn number</span>
       <span><i style="box-shadow:inset 0 0 0 2px var(--bonus)"></i>bonus / booster (not counted)</span>
       <span><i style="background:var(--hit);border-radius:2px"></i>group with 2+ numbers drawn</span>
+      <span><i style="box-shadow:inset 0 0 0 3px var(--yellow)"></i>predicted for this draw</span>
       <span style="text-decoration:line-through;color:var(--off)">77</span><span>outside this game's numbers</span>
     </div>
     <div class="summary" id="drawsum"></div>
+    <div class="panel" id="drawpred"></div>
   </section>
 
   <section aria-labelledby="h-hist">
@@ -505,6 +528,7 @@ function renderDraw(){
   if(d[2]!=null)b+=`<span class="ball bonus">${String(d[2]).padStart(2,"0")}</span><span class="ball-label">${game.pbBall?"PowerBall (1–20, not on the sheet)":game.key.startsWith("l")&&!game.key.startsWith("lu")?"bonus":"booster"}</span>`;
   $("balls").innerHTML=b;
   const drawn=new Set(d[1]), bonus=game.pbBall?null:d[2], h=HITS[idx];
+  const PA=predsAt(game,idx), predicted=new Set(PA?[].concat.apply([],PA.map(x=>x.s)):[]);
   let html="";
   for(let blk=0;blk<4;blk++){
     html+=`<div class="block">`;
@@ -513,7 +537,7 @@ function renderDraw(){
       html+=`<div class="gcol${n>=2?" two":""}${selGroup===g?" sel":""}" data-g="${g}" title="Group ${g+1}: ${n} drawn"><div class="ghead">${blk===0?NAMES[c]:"G"+(g+1)}<span class="hitcount" data-n="${n}">${n}</span></div>`;
       for(const x of GROUPS[g]){
         const cls=x>game.max?"off":drawn.has(x)?"hit":x===bonus?"bon":"";
-        html+=`<div class="cell ${cls}"><span>${x}</span></div>`;
+        html+=`<div class="cell ${cls}${predicted.has(x)?" pred":""}"><span>${x}</span></div>`;
       }
       html+=`</div>`;
     }
@@ -528,6 +552,7 @@ function renderDraw(){
     <div class="stat"><span class="v">${two.length?two.map(x=>`G${x[1]+1}`).join(", "):"None"}</span><span class="l">groups with 2+ numbers this draw${two.length?" ("+two.map(x=>x[0]).join(", ")+")":""}</span></div>
     <div class="stat"><span class="v num">${two.length} <span class="muted" style="font-size:15px">vs ${avgTwo.toFixed(1)} usual</span></span><span class="l">groups with 2+ this draw, compared with a normal draw</span></div>
     <div class="stat"><span class="v num">${covered} / 40</span><span class="l">groups that caught at least one number</span></div>`;
+  $("drawpred").innerHTML=`<h3>Predicted for this draw</h3>`+reportHTML(game,idx);wireRepShare($("drawpred"),game);
 }
 function renderHeat(){
   const cs=getComputedStyle(document.documentElement);
@@ -957,11 +982,88 @@ function shareCanvas(g){
 }
 function roundRect(x,l,t,w,h,r){x.beginPath();x.moveTo(l+r,t);x.arcTo(l+w,t,l+w,t+h,r);x.arcTo(l+w,t+h,l,t+h,r);x.arcTo(l,t+h,l,t,r);x.arcTo(l,t,l+w,t,r);x.closePath()}
 function drawBall(x,cx,cy,r,fill,ink,v){x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fillStyle=fill;x.fill();x.fillStyle=ink;x.font='600 '+Math.round(r*0.95)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.textBaseline="middle";x.fillText(String(v).padStart(2,"0"),cx,cy+2)}
-let SHARE_BLOB=null, SHARE_NAME="";
-function openShare(g){
+// ---------- predictions made before a draw, and how they did ----------
+const AT_CACHE={};
+function predsAt(g,i){
+  if(i<30)return null;
+  const key=g.key+":"+i;
+  if(!AT_CACHE[key])AT_CACHE[key]=rankedFive(Object.assign({},g,{draws:g.draws.slice(0,i)})).sets;
+  return AT_CACHE[key];
+}
+function groupsAt(g,i){
+  const d=g.draws[i], s=new Set(d[1]), M=g.max;
+  const hits=GROUPS.map(G=>G.filter(x=>s.has(x)).length);
+  const two=hits.map((n,j)=>[n,j]).filter(x=>x[0]>=2).sort((a,b)=>b[0]-a[0]);
+  const cov=GROUPS.map(G=>G.filter(x=>x<=M).length), mx=Math.max.apply(null,cov);
+  const past=g.draws.slice(Math.max(0,i-10),i);
+  let hot=-1,hs=-1;GROUPS.forEach((G,j)=>{if(cov[j]!==mx)return;const sc=past.reduce((a,p)=>a+G.filter(x=>p[1].indexOf(x)>=0).length,0);if(sc>hs){hs=sc;hot=j}});
+  return{two,hot,hotHits:hits[hot],hotSize:mx};
+}
+function report(g,i){
+  const P=predsAt(g,i); if(!P)return null;
+  const d=g.draws[i], s=new Set(d[1]), k=g.k;
+  const rows=P.map((x,r)=>{const hit=x.s.filter(v=>s.has(v));return{r,x,hit:hit.length,pbHit:!!(g.pbBall&&x.pb===d[2])}});
+  const best=rows.reduce((a,b)=>(b.hit+(b.pbHit?.5:0))>(a.hit+(a.pbHit?.5:0))?b:a,rows[0]);
+  const total=rows.reduce((a,b)=>a+b.hit,0), avg=k*k/g.max, exp5=5*avg;
+  const verdict=total>=exp5+1?"Better than a random ticket":total<=exp5-1?"Worse than a random ticket":"About the same as a random ticket";
+  return{d,rows,best,total,avg,exp5,verdict,prev:g.draws[i-1][0],groups:groupsAt(g,i)};
+}
+function reportHTML(g,i){
+  const R0=report(g,i);
+  if(!R0)return `<p class="muted">Not enough earlier draws to predict this one. Predictions start from the 31st draw of the year.</p>`;
+  const s=new Set(R0.d[1]);
+  const rows=R0.rows.map(o=>`<div class="rrow${o===R0.best&&o.hit>0?" best":""}"><span class="rk">#${o.r+1}</span><span class="nums">${o.x.s.map(v=>`<span class="${s.has(v)?"hit":""}">${v}</span>`).join("")}${o.x.pb?`<span class="${o.pbHit?"pbh":"pbm"}">${o.x.pb}</span>`:""}</span><span class="sc">${o.hit} of ${g.k}${o.x.pb?(o.pbHit?" + PB":""):""}</span></div>`).join("");
+  const G=R0.groups;
+  return `<div class="rep-head"><span><b>${fmtDate(R0.d[0])}</b> <span class="muted">· predicted from draws up to ${fmtDate(R0.prev)}</span></span><button class="btn primary" data-repshare="${i}">Share picture</button></div>
+    <div class="rep-rows">${rows}</div>
+    <div class="rep-sum">
+      <div class="stat"><span class="v num">${R0.best.hit} of ${g.k}</span><span class="l">best ticket (#${R0.best.r+1})</span></div>
+      <div class="stat"><span class="v num">${R0.total} <span class="muted" style="font-size:15px">vs ${R0.exp5.toFixed(1)} average</span></span><span class="l">numbers matched across all 5</span></div>
+      <div class="stat"><span class="v" style="font-size:19px">${R0.verdict}</span><span class="l">a random ticket matches ${R0.avg.toFixed(2)} numbers on average</span></div>
+    </div>
+    <p class="rep-groups"><b>Your sheet:</b> ${G.two.length?"groups with 2+ numbers this draw: "+G.two.map(x=>"G"+(x[1]+1)+" ("+x[0]+")").join(", "):"no group caught 2 or more numbers this draw"}. The hot group before the draw was <b>G${G.hot+1}</b>, and ${G.hotHits} of its ${G.hotSize} numbers came out.</p>`;
+}
+function wireRepShare(root,g){root.querySelectorAll("[data-repshare]").forEach(b=>b.onclick=()=>{const i=+b.dataset.repshare;openShareCanvas(()=>reportCanvas(g,i),g.name.replace(/\s+/g,"-").toLowerCase()+"-results-vs-predictions-"+g.draws[i][0]+".png","How my "+g.name+" predictions did on "+fmtDate(g.draws[i][0]),"Share results vs predictions")})}
+function renderLastReport(){const i=game.draws.length-1;$("lastreport").innerHTML=reportHTML(game,i);wireRepShare($("lastreport"),game)}
+function reportCanvas(g,i){
+  const R0=report(g,i), W=1080, P=64, rowH=112, k=g.k, s=new Set(R0.d[1]);
+  const H=520+5*rowH+330, c=document.createElement("canvas"), x=c.getContext("2d");c.width=W;c.height=H;
+  const F=(w,sz,f)=>w+" "+sz+"px "+(f||'"Barlow Condensed", "Arial Narrow", sans-serif');
+  x.fillStyle="#15171c";x.fillRect(0,0,W,H);x.fillStyle="#f2e01c";x.fillRect(0,0,W,14);
+  x.textBaseline="alphabetic";x.textAlign="left";
+  x.fillStyle="#e8eaef";x.font=F(700,60);x.fillText(g.name+": results vs predictions",P,112);
+  x.fillStyle="#f2e01c";x.font=F(600,38);x.fillText("Drawn "+fmtDate(R0.d[0]),P,170);
+  x.fillStyle="#9aa2b1";x.font=F(500,28,"Barlow, Arial, sans-serif");x.fillText("Predictions made from draws up to "+fmtDate(R0.prev),P,212);
+  x.fillStyle="#9aa2b1";x.font=F(700,26);x.fillText("RESULT",P,286);
+  let bx=P;const rb=46;R0.d[1].forEach(v=>{drawBall(x,bx+rb,356,rb,"#6d93ff","#0d1020",v);bx+=rb*2+16});
+  if(R0.d[2]!=null){bx+=20;x.fillStyle=g.pbBall?"#f08b3e":"#9aa2b1";x.font=F(700,26);x.textAlign="center";x.textBaseline="middle";x.fillText(g.pbBall?"PB":"BONUS",bx+26,356);bx+=g.pbBall?56:80;drawBall(x,bx+rb,356,rb,g.pbBall?"#f08b3e":"#2d323c","#ffffff",R0.d[2]);x.textAlign="left"}
+  x.textBaseline="alphabetic";x.fillStyle="#9aa2b1";x.font=F(700,26);x.fillText("THE 5 PREDICTIONS",P,470);
+  R0.rows.forEach((o,r)=>{
+    const y=500+r*rowH, cy=y+rowH/2-8, best=o===R0.best&&o.hit>0;
+    x.fillStyle=best?"#1d3a2a":"#1f232b";roundRect(x,P-16,y-6,W-2*P+32,rowH-14,16);x.fill();
+    if(best){x.strokeStyle="#4fc486";x.lineWidth=3;roundRect(x,P-16,y-6,W-2*P+32,rowH-14,16);x.stroke()}
+    x.fillStyle="#9aa2b1";x.font=F(700,44);x.textBaseline="middle";x.fillText("#"+(r+1),P+4,cy);
+    const n=o.x.s.length+(o.x.pb?1:0), bw=Math.min(78,(W-2*P-330-(n-1)*12)/n);let px=P+96;
+    o.x.s.forEach(v=>{const h=s.has(v);if(h)drawBall(x,px+bw/2,cy,bw/2,"#6d93ff","#0d1020",v);else{x.beginPath();x.arc(px+bw/2,cy,bw/2-2,0,Math.PI*2);x.strokeStyle="#4a505c";x.lineWidth=3;x.stroke();x.fillStyle="#8a93a3";x.font='600 '+Math.round(bw*0.45)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.fillText(String(v).padStart(2,"0"),px+bw/2,cy+2);x.textAlign="left"}px+=bw+12});
+    if(o.x.pb){px+=8;if(o.pbHit)drawBall(x,px+bw/2,cy,bw/2,"#f08b3e","#ffffff",o.x.pb);else{x.beginPath();x.arc(px+bw/2,cy,bw/2-2,0,Math.PI*2);x.strokeStyle="#f08b3e";x.lineWidth=3;x.stroke();x.fillStyle="#f08b3e";x.font='600 '+Math.round(bw*0.45)+'px "IBM Plex Mono", Menlo, monospace';x.textAlign="center";x.fillText(String(o.x.pb).padStart(2,"0"),px+bw/2,cy+2);x.textAlign="left"}}
+    x.textAlign="right";x.fillStyle=best?"#4fc486":"#e8eaef";x.font=F(700,46);x.fillText(o.hit+" of "+k+(o.pbHit?" + PB":""),W-P,cy);x.textAlign="left";
+  });
+  let fy=500+5*rowH+40;x.textBaseline="alphabetic";
+  x.fillStyle="#e8eaef";x.font=F(700,40);x.fillText("Best ticket: "+R0.best.hit+" of "+k+"   ·   All 5: "+R0.total+" matched (average "+R0.exp5.toFixed(1)+")",P,fy);
+  x.fillStyle=R0.verdict.indexOf("Better")===0?"#4fc486":R0.verdict.indexOf("Worse")===0?"#f08b3e":"#f2e01c";x.font=F(600,36);x.fillText(R0.verdict,P,fy+52);
+  const G=R0.groups;x.fillStyle="#9aa2b1";x.font=F(500,27,"Barlow, Arial, sans-serif");
+  x.fillText("Sheet groups with 2+: "+(G.two.length?G.two.slice(0,6).map(z=>"G"+(z[1]+1)+" ("+z[0]+")").join(", "):"none"),P,fy+110);
+  x.fillText("Hot group before the draw: G"+(G.hot+1)+", "+G.hotHits+" of "+G.hotSize+" came out",P,fy+148);
+  x.fillStyle="#f2e01c";x.font=F(600,30);x.fillText("xabilon18-ctrl.github.io/lotto-group-sheet",P,fy+222);
+  return c;
+}
+let SHARE_BLOB=null, SHARE_NAME="", SHARE_TEXT="";
+function openShare(g){openShareCanvas(()=>shareCanvas(g),g.name.replace(/\s+/g,"-").toLowerCase()+"-predictions-"+new Date().toISOString().slice(0,10)+".png","My "+g.name+" predictions for "+todayLong())}
+function openShareCanvas(make,name,text,title){
   const go=()=>{
-    const c=shareCanvas(g), url=c.toDataURL("image/png");
-    SHARE_NAME=g.name.replace(/\s+/g,"-").toLowerCase()+"-predictions-"+new Date().toISOString().slice(0,10)+".png";
+    $("sharetitle").textContent=title||"Share your predictions";
+    const c=make(), url=c.toDataURL("image/png");
+    SHARE_NAME=name;SHARE_TEXT=text;
     $("shareimg").src=url;$("sharesave").href=url;$("sharesave").setAttribute("download",SHARE_NAME);
     SHARE_BLOB=null;if(c.toBlob)c.toBlob(b=>{SHARE_BLOB=b});
     const canFiles=!!(navigator.canShare&&window.File&&navigator.canShare({files:[new File([new Blob(["x"])],"x.png",{type:"image/png"})]}));
@@ -975,7 +1077,7 @@ function openShare(g){
 $("sharego").onclick=()=>{
   if(!SHARE_BLOB)return;
   const f=new File([SHARE_BLOB],SHARE_NAME,{type:"image/png"});
-  navigator.share({files:[f],title:"Lotto predictions",text:"My lotto predictions for "+todayLong()}).catch(()=>{});
+  navigator.share({files:[f],title:"Lotto predictions",text:SHARE_TEXT}).catch(()=>{});
 };
 $("shareclose").onclick=()=>{$("sharemodal").hidden=true};
 $("sharemodal").onclick=e=>{if(e.target===$("sharemodal"))$("sharemodal").hidden=true};
@@ -996,7 +1098,7 @@ document.querySelectorAll(".tabbar button").forEach(b=>{b.onclick=()=>showTab(b.
   b.onkeydown=e=>{const i=TABS.indexOf(b.dataset.tab);if(e.key==="ArrowRight")showTab(TABS[(i+1)%TABS.length],true,true);if(e.key==="ArrowLeft")showTab(TABS[(i+TABS.length-1)%TABS.length],true,true)}});
 function all(){
   HITS=game.draws.map(hitsOf);
-  renderGames();renderDraw();renderBoard();renderTest();labInit();renderReport();renderCmp();renderPred();$("decoyout").textContent="Press the button. It gives the draws 100 different sets of random 12-group labels and counts how many look notable. Compare that count with what the moon and stars get.";
+  renderGames();renderDraw();renderBoard();renderTest();labInit();renderReport();renderCmp();renderPred();renderLastReport();$("decoyout").textContent="Press the button. It gives the draws 100 different sets of random 12-group labels and counts how many look notable. Compare that count with what the moon and stars get.";
   const {cw}=renderHeat(); const hw=$("heatwrap"); hw.scrollLeft=hw.scrollWidth;
   const first=game.draws[0][0],last=game.draws[game.draws.length-1][0];
   $("srcline").textContent=`${game.name}: ${game.draws.length} draws, ${fmtDate(first)} to ${fmtDate(last)} (${game.when}), main numbers ${game.k} from 1–${game.max}.${game.key==="dlp"?" Daily Lotto Plus stops at 31 May because the source stopped listing it.":""} Results update automatically every day (last update ${new Date(UPDATED).toLocaleString("en-ZA",{dateStyle:"medium",timeStyle:"short"})}) from unofficial results sites, cross-checked where possible. Confirm any ticket on the official site.`;
